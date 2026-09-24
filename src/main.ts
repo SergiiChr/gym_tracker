@@ -26,6 +26,7 @@ router
   .add("/workout", () => new WorkoutScreen(app))
   .add("/history", () => new HistoryScreen(app))
   .add("/history/:id", (p) => new HistoryDetailScreen(app, p.id!))
+  .add("/finished/:id", (p) => new HistoryDetailScreen(app, p.id!, true))
   .add("/plans", () => new PlansScreen(app))
   .add("/plans/:planId", (p) => new PlanEditScreen(app, p.planId!))
   .add("/plans/:planId/days/:dayId", (p) => new DayEditScreen(app, p.planId!, p.dayId!))

@@ -1,15 +1,18 @@
 import { formatWeight } from "../../model/units";
 import { durationMinutes } from "../../services/workout";
 import type { App } from "../App";
-import { confirmDelete, emptyState, page } from "../components/layout";
+import { confirmDelete, emptyState, fab, page } from "../components/layout";
 import { actionRow, group, row } from "../components/list";
-import { formatDate } from "../dom";
+import { formatDate, h } from "../dom";
+import { ICONS } from "../icons";
 import type { Screen } from "../Router";
 
 export class HistoryDetailScreen implements Screen {
+  /** `finished` shows the summary right after a workout, with a way home instead of back to history. */
   constructor(
     private readonly app: App,
     private readonly logId: string,
+    private readonly finished = false,
   ) {}
 
   render(): HTMLElement {
@@ -28,9 +31,11 @@ export class HistoryDetailScreen implements Screen {
         }),
       ),
     );
-    return page(
+    const nav = this.finished ? { back: "/", backLabel: "Home" } : { back: "/history" };
+    const summary = page(
       log.dayName,
-      { back: "/history" },
+      nav,
+      this.finished ? h("p", { className: "page-note" }, "Workout saved. Nice work!") : null,
       group(null, [
         row({ title: "Plan", detail: log.planName }),
         row({ title: "Date", detail: formatDate(log.startedAt) }),
@@ -51,5 +56,7 @@ export class HistoryDetailScreen implements Screen {
         ),
       ]),
     );
+    if (!this.finished) return summary;
+    return h("div", {}, summary, fab(ICONS.check, "Back to the home screen", () => router.go("/"), "Done"));
   }
 }

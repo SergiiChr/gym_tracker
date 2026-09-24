@@ -27,8 +27,10 @@ export class Router {
     return this;
   }
 
-  go(path: string): void {
-    location.hash = path;
+  /** `replace` swaps the current history entry, so the back gesture skips the page being left. */
+  go(path: string, replace = false): void {
+    if (replace) location.replace(`#${path}`);
+    else location.hash = path;
   }
 
   /** Re-renders the current path; keeps scroll position when the path didn't change. */
