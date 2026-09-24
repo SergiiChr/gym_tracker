@@ -25,6 +25,7 @@ npm install
 npm run dev      # local dev server with hot reload
 npm test         # unit tests (vitest)
 npm run build    # type-check and build the static site into dist/
+npm run build:single  # same, plus one self-contained file in dist-single/
 ```
 
 ## Code layout
@@ -36,11 +37,14 @@ npm run build    # type-check and build the static site into dist/
 
 ## Hosting
 
-`npm run build` produces a static site in `dist/` with relative paths, so it runs from any static host.
+The build uses relative paths, so it runs from any static host.
 
-- **tiiny.host**: zip the contents of `dist/` and upload it.
-  CI also builds it: open the latest CI run on GitHub and download the `gym-tracker-site` artifact.
-- **GitHub Pages** (free, updates on every push): Settings → Pages → Source "GitHub Actions", then add a deploy workflow using `actions/deploy-pages`.
+**GitHub Pages** (default): every push to `main` runs the tests and deploys `dist/` via `.github/workflows/pages.yml`.
+One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+The site is then at `https://<user>.github.io/gym_tracker/`.
+
+**Single file** (tiiny.host or any host that takes one file): `npm run build:single` writes a self-contained `dist-single/index.html` with scripts, styles and icons inlined.
+Pull request CI also builds it: download the `gym-tracker-single-file` artifact from the run page.
 
 On a phone, open the site and use "Add to Home Screen" for a full screen app look.
 

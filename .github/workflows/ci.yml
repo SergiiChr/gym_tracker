@@ -1,8 +1,7 @@
 name: CI
 
+# Pushes to main are tested by the Pages deploy workflow.
 on:
-  push:
-    branches: [main]
   pull_request:
 
 jobs:
@@ -16,9 +15,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
-      # Ready-to-upload site: download the zip from the run page and drop it on tiiny.host.
+      - run: npm run build:single
+      # Single-file site: download it from the run page and upload index.html to tiiny.host.
       - uses: actions/upload-artifact@v4
         with:
-          name: gym-tracker-site
-          path: dist
+          name: gym-tracker-single-file
+          path: dist-single/index.html
