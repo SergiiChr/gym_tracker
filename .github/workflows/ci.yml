@@ -1,0 +1,23 @@
+name: CI
+
+# Pushes to main are tested by the Pages deploy workflow.
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:single
+      # Single-file site: download it from the run page and upload index.html to tiiny.host.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gym-tracker-single-file
+          path: dist-single/index.html
