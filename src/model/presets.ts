@@ -95,18 +95,24 @@ class PresetBuilder {
 
   /** The owner's own 4-day split; weights go up on the last (heaviest) set. */
   myPreset(): Program {
+    const { pyramid, absReps } = MY_PRESET;
+    const abs: readonly string[] = MY_PRESET.abs;
+    const bodyweight: readonly string[] = MY_PRESET.bodyweight;
+    // The pyramid lines up with the last sets, so 2 sets are 10/8 and extra leading sets repeat 12.
+    const repsFor = (index: number, count: number): number => pyramid[Math.max(0, pyramid.length - count + index)]!;
     const exercises = new Map<string, Exercise>();
     const get = (name: keyof typeof MY_PRESET.exercises): Exercise => {
       const existing = exercises.get(name);
       if (existing) return existing;
-      const sets = MY_PRESET.exercises[name];
-      const bodyweight = (MY_PRESET.bodyweight as readonly string[]).includes(name);
+      const weights = MY_PRESET.exercises[name];
+      const sets = weights.map((kg, i): [number, number] => [abs.includes(name) ? absReps : repsFor(i, weights.length), kg]);
+      const isBodyweight = bodyweight.includes(name);
       const exercise = this.exercise({
         name,
         sets,
         restSec: 120,
-        bodyweight,
-        targetReps: bodyweight ? undefined : (sets.at(-1)?.[0] ?? 8) + 2,
+        bodyweight: isBodyweight,
+        targetReps: isBodyweight ? undefined : (sets.at(-1)?.[0] ?? 8) + 2,
         lastSetOnly: true,
       });
       exercises.set(name, exercise);

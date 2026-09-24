@@ -15,15 +15,28 @@ describe("presets", () => {
     expect(sitUp[0]?.bodyweight).toBe(true);
   });
 
-  it("keeps the logged weights and progresses the top set", () => {
+  it("keeps the logged weights with 12/10/8 targets counted from the last set", () => {
     const data = presetData();
-    const press = data.exercises.find((e) => e.name === "Incline Dumbbell Press")!;
-    expect(press.schemes.perSet.map((s) => [s.reps, s.weight])).toEqual([
+    const sets = (name: string): number[][] =>
+      data.exercises.find((e) => e.name === name)!.schemes.perSet.map((s) => [s.reps, s.weight]);
+    expect(sets("Incline Dumbbell Press")).toEqual([
       [12, 15],
-      [10, 22.5],
+      [12, 22.5],
       [10, 27.5],
       [8, 30],
     ]);
+    expect(sets("Lateral Raise")).toEqual([
+      [12, 5],
+      [10, 7.5],
+      [8, 10],
+    ]);
+    expect(sets("Barbell Curl")).toEqual([
+      [10, 25],
+      [8, 35],
+    ]);
+    expect(sets("Back Extension")).toEqual([[8, 15]]);
+    expect(sets("Ab Crunch Machine")).toEqual([[20, 47.5]]);
+    const press = data.exercises.find((e) => e.name === "Incline Dumbbell Press")!;
     expect(press.incrementLastSetOnly).toBe(true);
     expect(press.increment?.targetReps).toBe(10);
   });
