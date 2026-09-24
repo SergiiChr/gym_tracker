@@ -4,6 +4,7 @@ import { App } from "./ui/App";
 import { installTouchTooltips } from "./ui/components/tooltips";
 import type { PlanMode } from "./model/types";
 import { Router } from "./ui/Router";
+import { BackupScreen } from "./ui/screens/BackupScreen";
 import { DayEditScreen } from "./ui/screens/DayEditScreen";
 import { ExerciseEditScreen } from "./ui/screens/ExerciseEditScreen";
 import { ExercisesScreen } from "./ui/screens/ExercisesScreen";
@@ -35,7 +36,8 @@ router
   .add("/exercises", () => new ExercisesScreen(app))
   .add("/exercises/:id", (p) => exerciseScreen(p.id!, "fixed"))
   .add("/exercises/:id/:mode", (p) => exerciseScreen(p.id!, p.mode === "perSet" ? "perSet" : "fixed"))
-  .add("/settings", () => new SettingsScreen(app));
+  .add("/settings", () => new SettingsScreen(app))
+  .add("/settings/backup", () => new BackupScreen(app));
 
 function exerciseScreen(id: string, mode: PlanMode): ExerciseEditScreen {
   return new ExerciseEditScreen(app, id, "/exercises", mode, (next) => `/exercises/${id}/${next}`);

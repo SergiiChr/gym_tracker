@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addPresets, presetData } from "../src/model/presets";
+import { MINIMAL_BACKUP } from "../src/model/backupExample";
 import { MemoryStorage, Store } from "../src/services/Store";
 import { exerciseSummary } from "../src/ui/format";
 import { moveItem } from "../src/ui/components/gestures";
@@ -57,12 +58,24 @@ describe("Store", () => {
     expect("sets" in squat).toBe(false);
   });
 
+  it("imports the minimal example with defaults filled in", () => {
+    const store = new Store(new MemoryStorage());
+    store.importJson(MINIMAL_BACKUP);
+    const [squat] = store.data.exercises;
+    expect(squat?.schemes.perSet).toEqual([{ reps: 5, weight: 60 }]);
+    expect(squat?.schemes.perSet).not.toBe(squat?.schemes.fixed);
+    expect(squat?.restSec).toBe(180);
+    expect(store.data.defaultPlanId).toBe("plan1");
+    expect(store.data.settings.unit).toBe("kg");
+    expect(store.data.history).toEqual([]);
+  });
+
   it("round-trips export and rejects foreign JSON", () => {
     const store = new Store(new MemoryStorage());
     const json = store.exportJson();
     store.reset();
     store.importJson(json);
-    expect(store.exportJson()).toBe(json);
+    expect(JSON.parse(store.exportJson())).toEqual(JSON.parse(json));
     expect(() => store.importJson('{"foo": 1}')).toThrow();
   });
 });

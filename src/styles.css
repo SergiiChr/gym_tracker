@@ -398,6 +398,30 @@ select.field-input {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
+/* Backup format hint */
+.format-hint {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.format-hint ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+}
+
+.code {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--text);
+  font: 12px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow-x: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* Weight stepper */
 .weight-input {
   display: inline-flex;

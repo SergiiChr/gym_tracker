@@ -1,4 +1,4 @@
-import { migrate } from "../model/migrate";
+import { migrate, withDefaults } from "../model/migrate";
 import { presetData } from "../model/presets";
 import type { AppData, Exercise, Plan } from "../model/types";
 
@@ -84,7 +84,7 @@ export class Store {
     if (typeof parsed.version !== "number" || !Array.isArray(parsed.exercises) || !Array.isArray(parsed.plans)) {
       throw new Error("Not a gym tracker backup");
     }
-    this.data = migrate(parsed);
+    this.data = withDefaults(migrate(parsed));
     this.save();
   }
 
@@ -97,7 +97,7 @@ export class Store {
     const raw = this.storage.getItem(STORAGE_KEY);
     if (!raw) return presetData();
     try {
-      return migrate(JSON.parse(raw) as AppData);
+      return withDefaults(migrate(JSON.parse(raw) as AppData));
     } catch {
       // Not saved back right away, so the broken blob can still be recovered until the next change.
       console.error("Stored data is corrupted, starting from presets");

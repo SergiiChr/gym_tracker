@@ -1,5 +1,5 @@
-import { bothModes, DATA_VERSION } from "./presets";
-import type { AppData, Exercise, SetSpec } from "./types";
+import { bothModes, DATA_VERSION, emptyData, newId } from "./presets";
+import type { AppData, Exercise, Plan, SetSpec } from "./types";
 
 type ExerciseV1 = Omit<Exercise, "schemes"> & { schemes?: Exercise["schemes"]; sets?: SetSpec[] };
 
@@ -15,4 +15,39 @@ export function migrate(data: AppData): AppData {
     data.version = 2;
   }
   return data;
+}
+
+/**
+ * Fills in fields a hand-written backup may leave out.
+ * An exercise with a scheme for only one logging style gets a copy of it for the other.
+ */
+export function withDefaults(data: Partial<AppData>): AppData {
+  const base = emptyData();
+  const settings = { ...base.settings, ...data.settings, increment: { ...base.settings.increment, ...data.settings?.increment } };
+  const exercises = (data.exercises ?? []).map((e: Partial<Exercise>): Exercise => {
+    const fixed = e.schemes?.fixed ?? e.schemes?.perSet ?? [];
+    return {
+      id: e.id ?? newId(),
+      name: e.name ?? "Exercise",
+      bodyweight: e.bodyweight ?? false,
+      restSec: e.restSec ?? settings.defaultRestSec,
+      increment: e.increment ?? null,
+      incrementLastSetOnly: e.incrementLastSetOnly ?? false,
+      schemes: { fixed, perSet: e.schemes?.perSet ?? structuredClone(fixed) },
+    };
+  });
+  const plans = (data.plans ?? []).map((p: Partial<Plan>): Plan => ({
+    id: p.id ?? newId(),
+    name: p.name ?? "Plan",
+    mode: p.mode ?? "fixed",
+    days: p.days ?? [],
+  }));
+  return {
+    ...base,
+    ...data,
+    settings,
+    exercises,
+    plans,
+    defaultPlanId: data.defaultPlanId ?? plans[0]?.id ?? null,
+  };
 }
