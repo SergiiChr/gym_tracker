@@ -5,13 +5,15 @@ import { ICONS } from "../icons";
 interface PageOptions {
   /** Hash path of the parent screen; no back button when omitted. */
   back?: string;
+  backLabel?: string;
   action?: HTMLElement;
   /** Big iOS-style heading in the content instead of the compact bar title. */
   largeTitle?: boolean;
 }
 
 export function page(title: string, options: PageOptions, ...content: Child[]): HTMLElement {
-  const back = options.back ? h("a", { className: "nav-back", href: `#${options.back}`, title: "Back" }, svg(ICONS.back), "Back") : h("span");
+  const label = options.backLabel ?? "Back";
+  const back = options.back ? h("a", { className: "nav-back", href: `#${options.back}`, title: label }, svg(ICONS.back), label) : h("span");
   return h(
     "div",
     { className: "page" },

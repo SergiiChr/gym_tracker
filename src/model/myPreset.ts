@@ -1,0 +1,93 @@
+/**
+ * The owner's 4-day split. Weights per set in kg come from the latest logged sessions (July 2026).
+ * Target reps follow the plan's 12/10/8 pyramid counted back from the last set; abs target 20.
+ */
+export const MY_PRESET = {
+  name: "My preset",
+  pyramid: [12, 10, 8],
+  absReps: 20,
+  abs: ["Sit Up", "Ab Crunch Machine", "Reverse Crunch"],
+  bodyweight: ["Sit Up", "Reverse Crunch"],
+  exercises: {
+    "Incline Dumbbell Press": [15, 22.5, 27.5, 30],
+    "Incline Cable Flye": [10, 15, 20],
+    "Dumbbell Pullover": [7.5, 10],
+    "Dumbbell Prone Incline Curl": [10, 17.5],
+    "Barbell Curl": [25, 35],
+    "Leg Extension": [50, 61, 85],
+    "Hack Squat": [20, 20],
+    "Split Squat with Dumbbells": [5, 10],
+    "Glute Builder": [20, 30],
+    "Leg Curl": [50, 68, 77],
+    "Romanian Deadlift": [17, 20],
+    "Seated Calf Raise": [20, 20, 20],
+    "Dumbbell Shoulder Press": [15, 20, 25],
+    "Lateral Raise": [5, 7.5, 10],
+    "Dumbbell Shrug": [25, 30, 35],
+    "Low Cable Triceps Extension": [26, 28, 33],
+    "Standing Bent-Over One-Arm Dumbbell Triceps Extension": [12.5],
+    "Sit Up": [0],
+    "Ab Crunch Machine": [47.5],
+    "Reverse Crunch": [0],
+    "Weighted Pull Ups": [0, 10, 15],
+    "Lying T-Bar Row": [40, 50],
+    "Barbell Deadlift": [50, 55],
+    "Seated Cable Rows": [39, 45],
+    "Reverse Flyes": [27, 36, 45],
+    "Back Extension": [15],
+    "Face Pull": [11.25, 13],
+  } satisfies Record<string, readonly number[]>,
+  /** In the order the log shows them being trained. */
+  days: [
+    {
+      name: "Chest",
+      exercises: [
+        "Incline Dumbbell Press",
+        "Incline Cable Flye",
+        "Dumbbell Pullover",
+        "Dumbbell Prone Incline Curl",
+        "Barbell Curl",
+        "Sit Up",
+        "Ab Crunch Machine",
+        "Reverse Crunch",
+      ],
+    },
+    {
+      name: "Legs",
+      exercises: [
+        "Leg Extension",
+        "Hack Squat",
+        "Split Squat with Dumbbells",
+        "Glute Builder",
+        "Leg Curl",
+        "Romanian Deadlift",
+        "Seated Calf Raise",
+      ],
+    },
+    {
+      name: "Shoulders",
+      exercises: [
+        "Dumbbell Shoulder Press",
+        "Lateral Raise",
+        "Dumbbell Shrug",
+        "Low Cable Triceps Extension",
+        "Standing Bent-Over One-Arm Dumbbell Triceps Extension",
+        "Sit Up",
+        "Ab Crunch Machine",
+        "Reverse Crunch",
+      ],
+    },
+    {
+      name: "Back",
+      exercises: [
+        "Weighted Pull Ups",
+        "Lying T-Bar Row",
+        "Barbell Deadlift",
+        "Seated Cable Rows",
+        "Reverse Flyes",
+        "Back Extension",
+        "Face Pull",
+      ],
+    },
+  ],
+} as const;

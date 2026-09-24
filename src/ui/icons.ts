@@ -3,6 +3,7 @@ const icon = (path: string): string =>
 
 export const ICONS = {
   play: `<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>`,
+  check: icon('<path d="M5 12l5 5 9-10"/>'),
   flag: icon('<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>'),
   plus: icon('<path d="M12 5v14M5 12h14"/>'),
   back: icon('<path d="M15 5l-7 7 7 7"/>'),

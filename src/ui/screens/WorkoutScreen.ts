@@ -176,7 +176,7 @@ export class WorkoutScreen implements Screen {
           const finish = (): void => {
             finishWorkout(store.data, workout);
             store.save();
-            router.go(`/history/${workout.id}`);
+            router.go(`/finished/${workout.id}`, true);
           };
           const logged = workout.exercises.some((e) => e.sets.some((s) => s.reps !== null));
           if (logged) finish();

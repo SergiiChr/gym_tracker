@@ -44,6 +44,11 @@
   box-sizing: border-box;
 }
 
+/* Stops double-tap zoom so fast taps on set circles register as taps; pinch zoom still works. */
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background: var(--bg);
