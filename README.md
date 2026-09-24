@@ -47,6 +47,8 @@ The site is then at `https://<user>.github.io/gym_tracker/`.
 Pull request CI also builds it: download the `gym-tracker-single-file` artifact from the run page.
 
 On a phone, open the site and use "Add to Home Screen" for a full screen app look.
+On iPhone this also keeps the data safe: Safari deletes storage of websites not visited for 7 days, but not of Home Screen apps.
+The Home Screen app and the Safari tab keep separate data.
 
 Data lives in the browser it was entered in.
 Use Settings → Export data for backups or to move to another device.

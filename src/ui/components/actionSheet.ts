@@ -25,6 +25,8 @@ export function actionSheet(title: string, actions: SheetAction[]): void {
   // Clicking the backdrop targets the dialog itself.
   dialog.addEventListener("click", (e) => e.target === dialog && choose());
   dialog.addEventListener("close", () => dialog.remove());
+  // A back swipe changes the screen under the sheet, so its actions would apply to the wrong page.
+  window.addEventListener("hashchange", () => dialog.close(), { once: true });
   document.body.append(dialog);
   dialog.showModal();
 }

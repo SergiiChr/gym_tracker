@@ -44,4 +44,8 @@ function exerciseScreen(id: string, mode: PlanMode): ExerciseEditScreen {
 }
 
 installTouchTooltips();
+// iOS Safari only applies :active styles when the page listens to touches.
+document.addEventListener("touchstart", () => {}, { passive: true });
+// Asks the browser not to evict data under storage pressure; browsers may ignore it.
+void navigator.storage?.persist?.();
 router.render();

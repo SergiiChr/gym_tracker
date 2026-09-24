@@ -65,6 +65,9 @@ select {
 
 button {
   cursor: pointer;
+  /* iOS otherwise selects button text on long press. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .page {

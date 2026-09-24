@@ -20,7 +20,7 @@ export class BackupScreen implements Screen {
           actionRow("Export data", "Download all data as a JSON file", () => this.exportData()),
           actionRow("Import data", "Replace all data with a JSON backup", () => this.importData()),
         ],
-        "Data is stored in this browser only. Export a backup before clearing browser data or switching devices.",
+        "Data is stored in this browser only. Export a backup before clearing browser data or switching devices. On iPhone, add the app to the Home Screen: Safari may delete website data after 7 days without a visit.",
       ),
       group(
         "Data format",
