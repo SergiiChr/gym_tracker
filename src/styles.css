@@ -556,7 +556,7 @@ select.field-input {
 }
 
 .circle.done {
-  background: var(--red);
+  background: var(--green);
   color: #fff;
 }
 
