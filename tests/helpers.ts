@@ -1,11 +1,11 @@
-import { emptyData, newExercise } from "../src/model/presets";
+import { bothModes, emptyData, newExercise } from "../src/model/presets";
 import type { AppData, Exercise, Plan } from "../src/model/types";
 
 /** Data with one fixed-mode plan of two days sharing a "Squat" exercise. */
 export function sampleData(): { data: AppData; squat: Exercise; bench: Exercise; plan: Plan } {
   const data = emptyData();
-  const squat: Exercise = { ...newExercise(data.settings), name: "Squat", sets: Array.from({ length: 5 }, () => ({ reps: 5, weight: 100 })) };
-  const bench: Exercise = { ...newExercise(data.settings), name: "Bench", sets: [{ reps: 5, weight: 60 }] };
+  const squat: Exercise = { ...newExercise(data.settings), name: "Squat", schemes: bothModes(Array.from({ length: 5 }, () => ({ reps: 5, weight: 100 }))) };
+  const bench: Exercise = { ...newExercise(data.settings), name: "Bench", schemes: bothModes([{ reps: 5, weight: 60 }]) };
   const plan: Plan = {
     id: "plan",
     name: "Plan",

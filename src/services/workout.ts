@@ -1,5 +1,5 @@
 import { newId } from "../model/presets";
-import type { AppData, LoggedSet, Plan, PlanDay, WorkoutLog } from "../model/types";
+import type { AppData, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
 import { applyResult } from "./progression";
 
 export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutLog {
@@ -11,7 +11,7 @@ export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutL
         exerciseId: exercise.id,
         name: exercise.name,
         bodyweight: exercise.bodyweight,
-        sets: exercise.sets.map((s) => ({ targetReps: s.reps, reps: null, weight: s.weight })),
+        sets: exercise.schemes[plan.mode].map((s) => ({ targetReps: s.reps, reps: null, weight: s.weight })),
       },
     ];
   });
@@ -33,15 +33,16 @@ export function finishWorkout(data: AppData, workout: WorkoutLog): void {
   workout.finishedAt = Date.now();
   for (const logged of workout.exercises) {
     const exercise = data.exercises.find((e) => e.id === logged.exerciseId);
-    if (exercise) applyResult(logged, exercise, data.settings);
+    if (exercise) applyResult(logged, exercise, workout.mode, data.settings);
   }
   data.history.unshift(workout);
   data.activeWorkout = null;
 }
 
-/** The same set from the latest finished workout that included this exercise. */
-export function previousSet(data: AppData, exerciseId: string, index: number): LoggedSet | undefined {
+/** The same set from the latest finished workout in this logging style that included this exercise. */
+export function previousSet(data: AppData, exerciseId: string, mode: PlanMode, index: number): LoggedSet | undefined {
   for (const log of data.history) {
+    if (log.mode !== mode) continue;
     const logged = log.exercises.find((e) => e.exerciseId === exerciseId);
     if (logged) return logged.sets[index];
   }

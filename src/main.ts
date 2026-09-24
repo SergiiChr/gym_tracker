@@ -2,6 +2,7 @@ import "./styles.css";
 import { browserStorage, Store } from "./services/Store";
 import { App } from "./ui/App";
 import { installTouchTooltips } from "./ui/components/tooltips";
+import type { PlanMode } from "./model/types";
 import { Router } from "./ui/Router";
 import { DayEditScreen } from "./ui/screens/DayEditScreen";
 import { ExerciseEditScreen } from "./ui/screens/ExerciseEditScreen";
@@ -27,10 +28,18 @@ router
   .add("/plans", () => new PlansScreen(app))
   .add("/plans/:planId", (p) => new PlanEditScreen(app, p.planId!))
   .add("/plans/:planId/days/:dayId", (p) => new DayEditScreen(app, p.planId!, p.dayId!))
-  .add("/plans/:planId/days/:dayId/exercises/:id", (p) => new ExerciseEditScreen(app, p.id!, `/plans/${p.planId}/days/${p.dayId}`))
+  .add("/plans/:planId/days/:dayId/exercises/:id", (p) => {
+    const mode = app.store.plan(p.planId!)?.mode ?? "fixed";
+    return new ExerciseEditScreen(app, p.id!, `/plans/${p.planId}/days/${p.dayId}`, mode);
+  })
   .add("/exercises", () => new ExercisesScreen(app))
-  .add("/exercises/:id", (p) => new ExerciseEditScreen(app, p.id!, "/exercises"))
+  .add("/exercises/:id", (p) => exerciseScreen(p.id!, "fixed"))
+  .add("/exercises/:id/:mode", (p) => exerciseScreen(p.id!, p.mode === "perSet" ? "perSet" : "fixed"))
   .add("/settings", () => new SettingsScreen(app));
+
+function exerciseScreen(id: string, mode: PlanMode): ExerciseEditScreen {
+  return new ExerciseEditScreen(app, id, "/exercises", mode, (next) => `/exercises/${id}/${next}`);
+}
 
 installTouchTooltips();
 router.render();

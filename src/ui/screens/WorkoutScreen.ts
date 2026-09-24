@@ -145,7 +145,7 @@ export class WorkoutScreen implements Screen {
 
   /** Last time's reps for this set; green when today's weight is higher. */
   private updateHint(el: HTMLElement, logged: LoggedExercise, set: LoggedSet, index: number, withWeight: boolean): void {
-    const prev = previousSet(this.app.store.data, logged.exerciseId, index);
+    const prev = previousSet(this.app.store.data, logged.exerciseId, this.app.store.data.activeWorkout?.mode ?? "fixed", index);
     const up = prev !== undefined && !logged.bodyweight && set.weight > prev.weight;
     el.classList.toggle("up", up);
     el.title = up ? "Weight is up since last time" : "Reps from last workout";

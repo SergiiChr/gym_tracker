@@ -1,7 +1,7 @@
 import { convertWeight, DEFAULT_STEP } from "./units";
-import type { AppData, Exercise, Plan, PlanDay, Settings, Unit } from "./types";
+import type { AppData, Exercise, Plan, PlanDay, PlanMode, SetSpec, Settings, Unit } from "./types";
 
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 
 export function newId(): string {
   return crypto.randomUUID();
@@ -17,13 +17,18 @@ export function defaultSettings(): Settings {
   };
 }
 
+/** The same starting sets for every logging style; they diverge once workouts are logged. */
+export function bothModes(sets: SetSpec[]): Record<PlanMode, SetSpec[]> {
+  return { fixed: sets, perSet: structuredClone(sets) };
+}
+
 /** Blank exercise built from the defaults in settings. */
 export function newExercise(settings: Settings): Exercise {
   return {
     id: newId(),
     name: "New exercise",
     bodyweight: false,
-    sets: Array.from({ length: settings.defaultSets }, () => ({ reps: settings.defaultReps, weight: 0 })),
+    schemes: bothModes(Array.from({ length: settings.defaultSets }, () => ({ reps: settings.defaultReps, weight: 0 }))),
     restSec: settings.defaultRestSec,
     increment: null,
     incrementLastSetOnly: false,
@@ -63,7 +68,7 @@ class PresetBuilder {
       id: newId(),
       name: seed.name,
       bodyweight: false,
-      sets: seed.sets.map(([reps, kg]) => ({ reps, weight: convertWeight(kg, "kg", this.unit) })),
+      schemes: bothModes(seed.sets.map(([reps, kg]) => ({ reps, weight: convertWeight(kg, "kg", this.unit) }))),
       restSec: seed.restSec ?? 180,
       increment: custom
         ? { enabled: true, step: DEFAULT_STEP[this.unit] * (seed.steps ?? 1), targetReps: seed.targetReps ?? 5 }

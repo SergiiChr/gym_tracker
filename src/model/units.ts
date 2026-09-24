@@ -24,7 +24,7 @@ export function convertData(data: AppData, to: Unit): void {
   if (from === to) return;
   const convert = (w: number): number => convertWeight(w, from, to);
   for (const exercise of data.exercises) {
-    for (const set of exercise.sets) set.weight = convert(set.weight);
+    for (const set of Object.values(exercise.schemes).flat()) set.weight = convert(set.weight);
     if (exercise.increment) exercise.increment.step = DEFAULT_STEP[to];
   }
   const logs = data.activeWorkout ? [...data.history, data.activeWorkout] : data.history;

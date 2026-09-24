@@ -10,6 +10,7 @@ Runs fully in the browser; data is kept in `localStorage`, no backend and no run
   - **Same weight** (StrongLifts style): one weight per exercise, tap circles to log reps.
   - **Weight per set**: reps and weight for every set (pyramids, top sets).
 - Exercises are shared between days and plans, so progress carries over.
+  Each exercise keeps separate sets and weights per logging style, so a plan can switch style without duplicating exercises.
 - Auto-increment with global rules and per-exercise overrides (step, target reps, last set only).
 - Rest timer, workout history with duration, kg/lbs, JSON backup export/import.
 - Presets: StrongLifts 5×5 and Dorian Yates Blood & Guts.

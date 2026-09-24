@@ -14,7 +14,7 @@ describe("units", () => {
     convertData(data, "lbs");
     expect(data.settings.unit).toBe("lbs");
     expect(data.settings.increment.step).toBe(5);
-    expect(squat.sets[0]?.weight).toBe(220);
+    expect(squat.schemes.fixed[0]?.weight).toBe(220);
   });
 
   it("formats without float noise", () => {

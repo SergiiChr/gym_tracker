@@ -19,6 +19,24 @@ describe("workout", () => {
     expect(dayB.exercises[0]?.sets[0]?.weight).toBe(102.5);
   });
 
+  it("keeps logging styles separate", () => {
+    const { data, plan, squat } = sampleData();
+    const perSetPlan = { ...plan, id: "perSet", mode: "perSet" as const };
+    data.plans.push(perSetPlan);
+    squat.schemes.perSet = [{ reps: 10, weight: 50 }];
+
+    const perSet = createWorkout(data, perSetPlan, perSetPlan.days[1]!);
+    expect(perSet.exercises[0]?.sets).toEqual([{ targetReps: 10, reps: null, weight: 50 }]);
+    perSet.exercises[0]!.sets[0]!.reps = 10;
+    perSet.exercises[0]!.sets[0]!.weight = 55;
+    finishWorkout(data, perSet);
+
+    expect(squat.schemes.perSet[0]?.weight).toBe(57.5);
+    expect(squat.schemes.fixed[0]?.weight).toBe(100);
+    expect(previousSet(data, squat.id, "fixed", 0)).toBeUndefined();
+    expect(previousSet(data, squat.id, "perSet", 0)?.weight).toBe(55);
+  });
+
   it("moves the finished workout to history", () => {
     const { data, plan } = sampleData();
     const workout = createWorkout(data, plan, plan.days[0]!);
@@ -34,8 +52,8 @@ describe("workout", () => {
     const workout = createWorkout(data, plan, plan.days[0]!);
     workout.exercises[0]!.sets[1]!.reps = 4;
     finishWorkout(data, workout);
-    expect(previousSet(data, squat.id, 1)?.reps).toBe(4);
-    expect(previousSet(data, "missing", 0)).toBeUndefined();
+    expect(previousSet(data, squat.id, "fixed", 1)?.reps).toBe(4);
+    expect(previousSet(data, "missing", "fixed", 0)).toBeUndefined();
   });
 
   it("cycles reps like StrongLifts", () => {

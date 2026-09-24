@@ -23,8 +23,11 @@ export interface Exercise {
   id: string;
   name: string;
   bodyweight: boolean;
-  /** Current working scheme, shared by every plan day that uses this exercise. */
-  sets: SetSpec[];
+  /**
+   * Current working sets per logging style, shared by every plan day that uses this exercise.
+   * The styles progress separately since their weights aren't comparable.
+   */
+  schemes: Record<PlanMode, SetSpec[]>;
   restSec: number;
   /** Null means the global rule from settings applies. */
   increment: IncrementRule | null;

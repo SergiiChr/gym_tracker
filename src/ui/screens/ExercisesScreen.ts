@@ -3,7 +3,7 @@ import type { App } from "../App";
 import { swipeToDelete } from "../components/gestures";
 import { confirmDelete, emptyState, page, plusButton } from "../components/layout";
 import { group, row } from "../components/list";
-import { schemeText } from "../format";
+import { exerciseSummary } from "../format";
 import type { Screen } from "../Router";
 
 export class ExercisesScreen implements Screen {
@@ -15,7 +15,7 @@ export class ExercisesScreen implements Screen {
     const sorted = [...store.data.exercises].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sorted.map((exercise) =>
       swipeToDelete(
-        row({ title: exercise.name, subtitle: schemeText(exercise, unit), href: `/exercises/${exercise.id}`, tip: "Edit exercise. Swipe left to delete" }),
+        row({ title: exercise.name, subtitle: exerciseSummary(exercise, unit), href: `/exercises/${exercise.id}`, tip: "Edit exercise. Swipe left to delete" }),
         () =>
           confirmDelete(`exercise "${exercise.name}" from all plans`, () => {
             store.deleteExercise(exercise.id);

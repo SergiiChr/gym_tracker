@@ -1,4 +1,4 @@
-import type { AppData, Exercise, IncrementRule, LoggedExercise, Plan, PlanDay, Settings } from "../model/types";
+import type { AppData, Exercise, IncrementRule, LoggedExercise, Plan, PlanDay, PlanMode, Settings } from "../model/types";
 
 export function effectiveRule(exercise: Exercise, settings: Settings): IncrementRule {
   return exercise.increment ?? settings.increment;
@@ -19,16 +19,17 @@ export function earnedIncrement(logged: LoggedExercise, exercise: Exercise, rule
 }
 
 /**
- * Copies weights used in the workout back to the exercise, then applies auto-increment.
+ * Copies weights used in the workout back to the exercise's scheme for that logging style, then applies auto-increment.
  * Sets are matched by index, so a scheme edited mid-workout keeps its extra sets untouched.
  */
-export function applyResult(logged: LoggedExercise, exercise: Exercise, settings: Settings): void {
+export function applyResult(logged: LoggedExercise, exercise: Exercise, mode: PlanMode, settings: Settings): void {
+  const scheme = exercise.schemes[mode];
   logged.sets.forEach((set, i) => {
-    const spec = exercise.sets[i];
+    const spec = scheme[i];
     if (spec) spec.weight = set.weight;
   });
   const rule = effectiveRule(exercise, settings);
   if (!earnedIncrement(logged, exercise, rule)) return;
-  const targets = exercise.incrementLastSetOnly ? exercise.sets.slice(-1) : exercise.sets;
+  const targets = exercise.incrementLastSetOnly ? scheme.slice(-1) : scheme;
   for (const spec of targets) spec.weight += rule.step;
 }

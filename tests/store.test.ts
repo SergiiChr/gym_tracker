@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addPresets, presetData } from "../src/model/presets";
 import { MemoryStorage, Store } from "../src/services/Store";
-import { schemeText } from "../src/ui/format";
+import { exerciseSummary } from "../src/ui/format";
 import { moveItem } from "../src/ui/components/gestures";
 
 describe("Store", () => {
@@ -40,6 +40,23 @@ describe("Store", () => {
     expect(store.data.plans[2]?.days[0]?.exerciseIds).toContain([...squatIds][0]);
   });
 
+  it("upgrades version 1 data to per-mode schemes", () => {
+    const storage = new MemoryStorage();
+    const v1 = presetData() as unknown as { version: number; exercises: Record<string, unknown>[] };
+    v1.version = 1;
+    for (const e of v1.exercises) {
+      e.sets = (e.schemes as { fixed: unknown }).fixed;
+      delete e.schemes;
+    }
+    storage.setItem("gym-tracker", JSON.stringify(v1));
+    const store = new Store(storage);
+    const squat = store.data.exercises.find((e) => e.name === "Squat")!;
+    expect(store.data.version).toBe(2);
+    expect(squat.schemes.fixed).toEqual(squat.schemes.perSet);
+    expect(squat.schemes.fixed).not.toBe(squat.schemes.perSet);
+    expect("sets" in squat).toBe(false);
+  });
+
   it("round-trips export and rejects foreign JSON", () => {
     const store = new Store(new MemoryStorage());
     const json = store.exportJson();
@@ -61,7 +78,9 @@ describe("helpers", () => {
     const data = presetData();
     const squat = data.exercises.find((e) => e.name === "Squat")!;
     const legPress = data.exercises.find((e) => e.name === "Leg Press")!;
-    expect(schemeText(squat, "kg")).toBe("5×5 · 20 kg");
-    expect(schemeText(legPress, "kg")).toBe("2 sets · 16/12 · 0 kg");
+    expect(exerciseSummary(squat, "kg")).toBe("5×5 · 20 kg");
+    expect(exerciseSummary(legPress, "kg")).toBe("2 sets · 16/12 · 0 kg");
+    squat.schemes.perSet = [{ reps: 10, weight: 40 }];
+    expect(exerciseSummary(squat, "kg")).toBe("5×5 · 20 kg | 1×10 · 40 kg");
   });
 });

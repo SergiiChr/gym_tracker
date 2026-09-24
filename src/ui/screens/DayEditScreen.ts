@@ -29,7 +29,7 @@ export class DayEditScreen implements Screen {
       if (!exercise) return [];
       const exerciseRow = row({
         title: exercise.name,
-        subtitle: schemeText(exercise, unit),
+        subtitle: schemeText(exercise.schemes[plan.mode], exercise.bodyweight, unit),
         leading: dragHandle(),
         href: `${dayPath}/exercises/${id}`,
         tip: "Edit sets, reps and weight (shared by every day using this exercise). Swipe left to remove",
