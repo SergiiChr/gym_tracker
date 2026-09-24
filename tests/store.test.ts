@@ -9,7 +9,7 @@ describe("Store", () => {
   it("starts with presets and persists changes", () => {
     const storage = new MemoryStorage();
     const store = new Store(storage);
-    expect(store.data.plans.map((p) => p.name)).toEqual(["5×5 A/B", "HIT 4-day split"]);
+    expect(store.data.plans.map((p) => p.name)).toEqual(["My preset", "5×5 A/B", "HIT 4-day split"]);
     store.data.settings.defaultReps = 8;
     store.save();
     expect(new Store(storage).data.settings.defaultReps).toBe(8);
@@ -35,10 +35,10 @@ describe("Store", () => {
     const count = store.data.exercises.length;
     addPresets(store.data);
     expect(store.data.exercises.length).toBe(count);
-    expect(store.data.plans.length).toBe(4);
+    expect(store.data.plans.length).toBe(3);
     const squatIds = new Set(store.data.exercises.filter((e) => e.name === "Squat").map((e) => e.id));
     expect(squatIds.size).toBe(1);
-    expect(store.data.plans[2]?.days[0]?.exerciseIds).toContain([...squatIds][0]);
+    expect(store.data.plans[1]?.days[0]?.exerciseIds).toContain([...squatIds][0]);
   });
 
   it("upgrades version 1 data to per-mode schemes", () => {

@@ -1,3 +1,4 @@
+import { MY_PRESET } from "./myPreset";
 import { convertWeight, DEFAULT_STEP } from "./units";
 import type { AppData, Exercise, Plan, PlanDay, PlanMode, SetSpec, Settings, Unit } from "./types";
 
@@ -50,8 +51,9 @@ export function emptyData(): AppData {
 interface ExerciseSeed {
   name: string;
   /** Reps and starting weight in kg. */
-  sets: [reps: number, kg: number][];
+  sets: readonly (readonly [reps: number, kg: number])[];
   restSec?: number;
+  bodyweight?: boolean;
   /** Increment in plate steps of the current unit (2 → 5 kg or 10 lbs). */
   steps?: number;
   targetReps?: number;
@@ -67,7 +69,7 @@ class PresetBuilder {
     return {
       id: newId(),
       name: seed.name,
-      bodyweight: false,
+      bodyweight: seed.bodyweight ?? false,
       schemes: bothModes(seed.sets.map(([reps, kg]) => ({ reps, weight: convertWeight(kg, "kg", this.unit) }))),
       restSec: seed.restSec ?? 180,
       increment: custom
@@ -91,7 +93,30 @@ class PresetBuilder {
     });
   }
 
-  fiveByFive(): { exercises: Exercise[]; plan: Plan } {
+  /** The owner's own 4-day split; weights go up on the last (heaviest) set. */
+  myPreset(): Program {
+    const exercises = new Map<string, Exercise>();
+    const get = (name: keyof typeof MY_PRESET.exercises): Exercise => {
+      const existing = exercises.get(name);
+      if (existing) return existing;
+      const sets = MY_PRESET.exercises[name];
+      const bodyweight = (MY_PRESET.bodyweight as readonly string[]).includes(name);
+      const exercise = this.exercise({
+        name,
+        sets,
+        restSec: 120,
+        bodyweight,
+        targetReps: bodyweight ? undefined : (sets.at(-1)?.[0] ?? 8) + 2,
+        lastSetOnly: true,
+      });
+      exercises.set(name, exercise);
+      return exercise;
+    };
+    const days = MY_PRESET.days.map((d) => day(d.name, d.exercises.map(get)));
+    return { exercises: [...exercises.values()], plan: { id: newId(), name: MY_PRESET.name, mode: "perSet", days } };
+  }
+
+  fiveByFive(): Program {
     const fiveByFive = (kg: number): [number, number][] => Array.from({ length: 5 }, () => [5, kg]);
     const squat = this.exercise({ name: "Squat", sets: fiveByFive(20) });
     const bench = this.exercise({ name: "Bench Press", sets: fiveByFive(20) });
@@ -109,7 +134,7 @@ class PresetBuilder {
     };
   }
 
-  hitSplit(): { exercises: Exercise[]; plan: Plan } {
+  hitSplit(): Program {
     const y = (name: string, reps: number): Exercise => this.topSet(name, reps);
     const chest = [y("Incline Barbell Press", 8), y("Flat Dumbbell Press", 8), y("Incline Dumbbell Fly", 8)];
     const biceps = [y("Incline Dumbbell Curl", 8), y("EZ-Bar Preacher Curl", 8)];
@@ -141,25 +166,36 @@ class PresetBuilder {
   }
 }
 
+interface Program {
+  exercises: Exercise[];
+  plan: Plan;
+}
+
 function day(name: string, exercises: Exercise[]): PlanDay {
   return { id: newId(), name, exerciseIds: exercises.map((e) => e.id) };
 }
 
 /**
- * Adds preset plans on top of existing data, so nothing is lost.
+ * Adds preset plans on top of existing data, so nothing is lost; plans that already exist by name are skipped.
  * Exercises that already exist with the same name are reused, so their progress carries over.
+ * A reused exercise still at 0 weight takes the preset's sets, since it was never set up.
+ * Programs earlier in the list win those name clashes, so My preset's real weights beat blank templates.
  */
 export function addPresets(data: AppData): void {
   const builder = new PresetBuilder(data.settings.unit);
-  const programs = [builder.fiveByFive(), builder.hitSplit()];
+  const fiveByFive = builder.fiveByFive();
+  const programs = [builder.myPreset(), fiveByFive, builder.hitSplit()];
+  const planNames = new Set(data.plans.map((p) => p.name));
   const byName = new Map(data.exercises.map((e) => [e.name.toLowerCase(), e]));
-  for (const program of programs) {
+  for (const program of programs.filter((p) => !planNames.has(p.plan.name))) {
+    const { mode } = program.plan;
     const resolved = new Map<string, string>();
     for (const exercise of program.exercises) {
       const key = exercise.name.toLowerCase();
       const existing = byName.get(key);
       if (existing) {
         resolved.set(exercise.id, existing.id);
+        if (existing.schemes[mode].every((s) => s.weight === 0)) existing.schemes[mode] = exercise.schemes[mode];
       } else {
         byName.set(key, exercise);
         data.exercises.push(exercise);
@@ -168,7 +204,7 @@ export function addPresets(data: AppData): void {
     for (const day of program.plan.days) day.exerciseIds = day.exerciseIds.map((id) => resolved.get(id) ?? id);
     data.plans.push(program.plan);
   }
-  data.defaultPlanId ??= programs[0]?.plan.id ?? null;
+  data.defaultPlanId ??= (data.plans.find((p) => p.id === fiveByFive.plan.id) ?? data.plans[0])?.id ?? null;
 }
 
 export function presetData(): AppData {
