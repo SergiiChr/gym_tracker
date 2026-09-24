@@ -23,7 +23,11 @@ export class PlansScreen implements Screen {
           href: `/plans/${plan.id}`,
           tip: "Edit plan. Swipe left to delete",
         }),
-        () => confirmDelete(`plan "${plan.name}"`) && (store.deletePlan(plan.id), this.app.commit()),
+        () =>
+          confirmDelete(`plan "${plan.name}"`, () => {
+            store.deletePlan(plan.id);
+            this.app.commit();
+          }),
       ),
     );
     const add = plusButton("Add a new plan", () => {

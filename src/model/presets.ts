@@ -140,12 +140,27 @@ function day(name: string, exercises: Exercise[]): PlanDay {
   return { id: newId(), name, exerciseIds: exercises.map((e) => e.id) };
 }
 
-/** Adds preset exercises and plans on top of existing data, so nothing is lost. */
+/**
+ * Adds preset plans on top of existing data, so nothing is lost.
+ * Exercises that already exist with the same name are reused, so their progress carries over.
+ */
 export function addPresets(data: AppData): void {
   const builder = new PresetBuilder(data.settings.unit);
   const programs = [builder.stronglifts(), builder.dorianYates()];
+  const byName = new Map(data.exercises.map((e) => [e.name.toLowerCase(), e]));
   for (const program of programs) {
-    data.exercises.push(...program.exercises);
+    const resolved = new Map<string, string>();
+    for (const exercise of program.exercises) {
+      const key = exercise.name.toLowerCase();
+      const existing = byName.get(key);
+      if (existing) {
+        resolved.set(exercise.id, existing.id);
+      } else {
+        byName.set(key, exercise);
+        data.exercises.push(exercise);
+      }
+    }
+    for (const day of program.plan.days) day.exerciseIds = day.exerciseIds.map((id) => resolved.get(id) ?? id);
     data.plans.push(program.plan);
   }
   data.defaultPlanId ??= programs[0]?.plan.id ?? null;

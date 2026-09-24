@@ -40,11 +40,11 @@ export class ExerciseEditScreen implements Screen {
         actionRow(
           "Delete exercise",
           "Delete this exercise and remove it from every plan day",
-          () => {
-            if (!confirmDelete(`exercise "${exercise.name}" from all plans`)) return;
-            store.deleteExercise(exercise.id);
-            router.go(this.backPath);
-          },
+          () =>
+            confirmDelete(`exercise "${exercise.name}" from all plans`, () => {
+              store.deleteExercise(exercise.id);
+              router.go(this.backPath);
+            }),
           true,
         ),
       ]),
@@ -67,11 +67,11 @@ export class ExerciseEditScreen implements Screen {
             exercise.bodyweight ? null : weightInput(set.weight, settings.increment.step, settings.unit, (w) => ((set.weight = w), save())),
           ),
         ),
-        () => {
-          if (!confirmDelete(`set ${i + 1}`)) return;
-          exercise.sets.splice(i, 1);
-          this.app.commit();
-        },
+        () =>
+          confirmDelete(`set ${i + 1}`, () => {
+            exercise.sets.splice(i, 1);
+            this.app.commit();
+          }),
       ),
     );
     const add = actionRow("Add set", "Add a set copying the last one", () => {

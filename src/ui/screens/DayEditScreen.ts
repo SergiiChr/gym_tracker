@@ -1,6 +1,6 @@
 import { newExercise } from "../../model/presets";
 import type { App } from "../App";
-import { actionSheet } from "../components/actionSheet";
+import { actionSheet, confirmSheet } from "../components/actionSheet";
 import { textRow } from "../components/forms";
 import { makeSortable, moveItem, swipeToDelete } from "../components/gestures";
 import { confirmDelete, emptyState, page } from "../components/layout";
@@ -37,11 +37,11 @@ export class DayEditScreen implements Screen {
       return [
         swipeToDelete(
           exerciseRow,
-          () => {
-            if (!confirm(`Remove ${exercise.name} from this day? The exercise itself is kept.`)) return;
-            day.exerciseIds.splice(index, 1);
-            this.app.commit();
-          },
+          () =>
+            confirmSheet(`Remove ${exercise.name} from this day? The exercise itself is kept.`, "Remove", () => {
+              day.exerciseIds.splice(index, 1);
+              this.app.commit();
+            }),
           "Remove",
         ),
       ];
@@ -62,12 +62,12 @@ export class DayEditScreen implements Screen {
         actionRow(
           "Delete day",
           "Delete this day from the plan",
-          () => {
-            if (!confirmDelete(`day "${day.name}"`)) return;
-            plan.days = plan.days.filter((d) => d !== day);
-            store.save();
-            router.go(planPath);
-          },
+          () =>
+            confirmDelete(`day "${day.name}"`, () => {
+              plan.days = plan.days.filter((d) => d !== day);
+              store.save();
+              router.go(planPath);
+            }),
           true,
         ),
       ]),

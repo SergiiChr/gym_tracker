@@ -5,6 +5,35 @@ const STORAGE_KEY = "gym-tracker";
 
 export type KeyValueStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
+/** Keeps data for the current page load only. */
+export class MemoryStorage implements KeyValueStorage {
+  private readonly items = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.items.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.items.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
+}
+
+/** localStorage, or an in-memory stand-in when the browser blocks it (private mode, sandboxed previews). */
+export function browserStorage(): KeyValueStorage {
+  try {
+    localStorage.setItem(`${STORAGE_KEY}-probe`, "1");
+    localStorage.removeItem(`${STORAGE_KEY}-probe`);
+    return localStorage;
+  } catch {
+    console.warn("localStorage is unavailable, data will not persist");
+    return new MemoryStorage();
+  }
+}
+
 /** Owns the app data and persists it as a single JSON blob. Callers mutate `data` and then call `save()`. */
 export class Store {
   data: AppData;

@@ -28,3 +28,8 @@ export function actionSheet(title: string, actions: SheetAction[]): void {
   document.body.append(dialog);
   dialog.showModal();
 }
+
+/** In-page replacement for confirm(), which some embedded views block: the action runs only when its button is tapped. */
+export function confirmSheet(message: string, actionLabel: string, onConfirm: () => void): void {
+  actionSheet(message, [{ label: actionLabel, destructive: true, onSelect: onConfirm }]);
+}

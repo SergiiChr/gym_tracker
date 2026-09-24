@@ -2,7 +2,7 @@ import { formatWeight } from "../../model/units";
 import type { LoggedExercise, LoggedSet, WorkoutLog } from "../../model/types";
 import { cycleReps, durationMinutes, finishWorkout, previousSet } from "../../services/workout";
 import type { App } from "../App";
-import { actionSheet } from "../components/actionSheet";
+import { actionSheet, confirmSheet } from "../components/actionSheet";
 import { emptyState, fab, page } from "../components/layout";
 import { RestTimer } from "../components/RestTimer";
 import { weightInput } from "../components/weightInput";
@@ -173,22 +173,25 @@ export class WorkoutScreen implements Screen {
       {
         label: "Finish workout",
         onSelect: () => {
+          const finish = (): void => {
+            finishWorkout(store.data, workout);
+            store.save();
+            router.go(`/history/${workout.id}`);
+          };
           const logged = workout.exercises.some((e) => e.sets.some((s) => s.reps !== null));
-          if (!logged && !confirm("No sets logged yet. Finish anyway?")) return;
-          finishWorkout(store.data, workout);
-          store.save();
-          router.go(`/history/${workout.id}`);
+          if (logged) finish();
+          else confirmSheet("No sets logged yet. Finish anyway?", "Finish workout", finish);
         },
       },
       {
         label: "Discard workout",
         destructive: true,
-        onSelect: () => {
-          if (!confirm("Discard this workout? Logged sets will be lost.")) return;
-          store.data.activeWorkout = null;
-          store.save();
-          router.go("/");
-        },
+        onSelect: () =>
+          confirmSheet("Discard this workout? Logged sets will be lost.", "Discard workout", () => {
+            store.data.activeWorkout = null;
+            store.save();
+            router.go("/");
+          }),
       },
     ]);
   }

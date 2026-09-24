@@ -1,7 +1,7 @@
 import { nextDay } from "../../services/progression";
 import { createWorkout } from "../../services/workout";
 import type { App } from "../App";
-import { actionSheet } from "../components/actionSheet";
+import { actionSheet, confirmSheet } from "../components/actionSheet";
 import { emptyState, fab, navButton, page } from "../components/layout";
 import { group, row } from "../components/list";
 import { h } from "../dom";
@@ -68,9 +68,12 @@ export class StartScreen implements Screen {
     const plan = store.defaultPlan();
     const day = plan?.days.find((d) => d.id === this.selectedDayId);
     if (!plan || !day) return;
-    if (store.data.activeWorkout && !confirm("A workout is already in progress. Discard it and start a new one?")) return;
-    store.data.activeWorkout = createWorkout(store.data, plan, day);
-    store.save();
-    router.go("/workout");
+    const start = (): void => {
+      store.data.activeWorkout = createWorkout(store.data, plan, day);
+      store.save();
+      router.go("/workout");
+    };
+    if (store.data.activeWorkout) confirmSheet("A workout is already in progress. Discard it and start a new one?", "Discard and start", start);
+    else start();
   }
 }

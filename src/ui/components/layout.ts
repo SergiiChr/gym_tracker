@@ -1,4 +1,5 @@
 import { h, svg, type Child } from "../dom";
+import { confirmSheet } from "./actionSheet";
 import { ICONS } from "../icons";
 
 interface PageOptions {
@@ -48,6 +49,6 @@ export function toast(text: string): void {
   setTimeout(() => el.remove(), 2500);
 }
 
-export function confirmDelete(what: string): boolean {
-  return confirm(`Delete ${what}? This can't be undone.`);
+export function confirmDelete(what: string, onConfirm: () => void): void {
+  confirmSheet(`Delete ${what}? This can't be undone.`, "Delete", onConfirm);
 }

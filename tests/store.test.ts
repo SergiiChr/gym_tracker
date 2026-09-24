@@ -1,21 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { presetData } from "../src/model/presets";
-import { Store, type KeyValueStorage } from "../src/services/Store";
+import { addPresets, presetData } from "../src/model/presets";
+import { MemoryStorage, Store } from "../src/services/Store";
 import { schemeText } from "../src/ui/format";
 import { moveItem } from "../src/ui/components/gestures";
-
-class MemoryStorage implements KeyValueStorage {
-  private readonly items = new Map<string, string>();
-  getItem(key: string): string | null {
-    return this.items.get(key) ?? null;
-  }
-  setItem(key: string, value: string): void {
-    this.items.set(key, value);
-  }
-  removeItem(key: string): void {
-    this.items.delete(key);
-  }
-}
 
 describe("Store", () => {
   it("starts with presets and persists changes", () => {
@@ -40,6 +27,17 @@ describe("Store", () => {
     const [first, second] = store.data.plans;
     store.deletePlan(first!.id);
     expect(store.data.defaultPlanId).toBe(second!.id);
+  });
+
+  it("reuses existing exercises when presets are added again", () => {
+    const store = new Store(new MemoryStorage());
+    const count = store.data.exercises.length;
+    addPresets(store.data);
+    expect(store.data.exercises.length).toBe(count);
+    expect(store.data.plans.length).toBe(4);
+    const squatIds = new Set(store.data.exercises.filter((e) => e.name === "Squat").map((e) => e.id));
+    expect(squatIds.size).toBe(1);
+    expect(store.data.plans[2]?.days[0]?.exerciseIds).toContain([...squatIds][0]);
   });
 
   it("round-trips export and rejects foreign JSON", () => {

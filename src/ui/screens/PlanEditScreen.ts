@@ -29,7 +29,11 @@ export class PlanEditScreen implements Screen {
           href: `/plans/${plan.id}/days/${day.id}`,
           tip: "Edit day. Drag the handle to reorder, swipe left to delete",
         }),
-        () => confirmDelete(`day "${day.name}"`) && ((plan.days = plan.days.filter((d) => d !== day)), this.app.commit()),
+        () =>
+          confirmDelete(`day "${day.name}"`, () => {
+            plan.days = plan.days.filter((d) => d !== day);
+            this.app.commit();
+          }),
       ),
     );
     const addDay = actionRow("Add day", "Add a workout day to this plan", () => {
@@ -66,11 +70,11 @@ export class PlanEditScreen implements Screen {
         actionRow(
           "Delete plan",
           "Delete this plan. Exercises and history are kept",
-          () => {
-            if (!confirmDelete(`plan "${plan.name}"`)) return;
-            store.deletePlan(plan.id);
-            router.go("/plans");
-          },
+          () =>
+            confirmDelete(`plan "${plan.name}"`, () => {
+              store.deletePlan(plan.id);
+              router.go("/plans");
+            }),
           true,
         ),
       ]),

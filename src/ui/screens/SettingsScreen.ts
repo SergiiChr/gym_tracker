@@ -2,6 +2,7 @@ import { addPresets, emptyData } from "../../model/presets";
 import type { Unit } from "../../model/types";
 import { convertData, formatWeight, STEP_OPTIONS } from "../../model/units";
 import type { App } from "../App";
+import { confirmSheet } from "../components/actionSheet";
 import { numberRow, segmentedRow, selectRow, toggleRow } from "../components/forms";
 import { page, toast } from "../components/layout";
 import { actionRow, group } from "../components/list";
@@ -30,11 +31,11 @@ export class SettingsScreen implements Screen {
           segmentedRow(
             units,
             settings.unit,
-            (unit) => {
-              if (!confirm(`Switch to ${unit}? All weights, including history, are converted and rounded.`)) return commit();
-              convertData(store.data, unit);
-              commit();
-            },
+            (unit) =>
+              confirmSheet(`Switch to ${unit}? All weights, including history, are converted and rounded.`, `Switch to ${unit}`, () => {
+                convertData(store.data, unit);
+                commit();
+              }),
             "Weight unit for the whole app",
           ),
         ],
@@ -77,11 +78,11 @@ export class SettingsScreen implements Screen {
           actionRow(
             "Clear all data",
             "Delete all plans, exercises, history and settings",
-            () => {
-              if (!confirm("Delete ALL plans, exercises, history and settings? This can't be undone.")) return;
-              store.data = emptyData();
-              commit();
-            },
+            () =>
+              confirmSheet("Delete ALL plans, exercises, history and settings? This can't be undone.", "Clear all data", () => {
+                store.data = emptyData();
+                commit();
+              }),
             true,
           ),
         ],
@@ -101,14 +102,17 @@ export class SettingsScreen implements Screen {
     const input = h("input", { type: "file", accept: "application/json,.json" });
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
-      if (!file || !confirm("Replace all current data with this backup?")) return;
-      try {
-        this.app.store.importJson(await file.text());
-        this.app.commit();
-        toast("Backup imported");
-      } catch {
-        alert("This file is not a valid gym tracker backup.");
-      }
+      if (!file) return;
+      const json = await file.text();
+      confirmSheet("Replace all current data with this backup?", "Replace data", () => {
+        try {
+          this.app.store.importJson(json);
+          this.app.commit();
+          toast("Backup imported");
+        } catch {
+          toast("This file is not a gym tracker backup. Nothing was changed.");
+        }
+      });
     });
     input.click();
   }

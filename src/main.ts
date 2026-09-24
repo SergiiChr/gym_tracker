@@ -1,5 +1,5 @@
 import "./styles.css";
-import { Store } from "./services/Store";
+import { browserStorage, Store } from "./services/Store";
 import { App } from "./ui/App";
 import { installTouchTooltips } from "./ui/components/tooltips";
 import { Router } from "./ui/Router";
@@ -16,7 +16,7 @@ import { StartScreen } from "./ui/screens/StartScreen";
 import { WorkoutScreen } from "./ui/screens/WorkoutScreen";
 
 const router = new Router(document.getElementById("app")!);
-const app = new App(new Store(localStorage), router);
+const app = new App(new Store(browserStorage()), router);
 
 router
   .add("/", () => new HomeScreen(app))

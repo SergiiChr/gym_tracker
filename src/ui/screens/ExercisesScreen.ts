@@ -16,7 +16,11 @@ export class ExercisesScreen implements Screen {
     const rows = sorted.map((exercise) =>
       swipeToDelete(
         row({ title: exercise.name, subtitle: schemeText(exercise, unit), href: `/exercises/${exercise.id}`, tip: "Edit exercise. Swipe left to delete" }),
-        () => confirmDelete(`exercise "${exercise.name}" from all plans`) && (store.deleteExercise(exercise.id), this.app.commit()),
+        () =>
+          confirmDelete(`exercise "${exercise.name}" from all plans`, () => {
+            store.deleteExercise(exercise.id);
+            this.app.commit();
+          }),
       ),
     );
     const add = plusButton("Add a new exercise", () => {

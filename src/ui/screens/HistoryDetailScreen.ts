@@ -41,12 +41,12 @@ export class HistoryDetailScreen implements Screen {
         actionRow(
           "Delete workout",
           "Remove this workout from history",
-          () => {
-            if (!confirmDelete("this workout")) return;
-            store.data.history = store.data.history.filter((l) => l !== log);
-            store.save();
-            router.go("/history");
-          },
+          () =>
+            confirmDelete("this workout", () => {
+              store.data.history = store.data.history.filter((l) => l !== log);
+              store.save();
+              router.go("/history");
+            }),
           true,
         ),
       ]),
