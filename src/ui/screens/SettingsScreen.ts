@@ -66,7 +66,7 @@ export class SettingsScreen implements Screen {
       group(
         "Data",
         [
-          actionRow("Add preset plans", "Add StrongLifts 5×5 and Dorian Yates plans with their exercises", () => {
+          actionRow("Add preset plans", "Add the 5×5 A/B and HIT 4-day split plans with their exercises", () => {
             addPresets(store.data);
             save();
             toast("Presets added");

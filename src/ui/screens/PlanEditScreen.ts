@@ -63,7 +63,7 @@ export class PlanEditScreen implements Screen {
       group(
         "Logging style",
         [segmentedRow(modes, plan.mode, (mode) => ((plan.mode = mode), this.app.commit()), "How sets are logged during a workout")],
-        "Same weight: one weight per exercise, tap circles to log reps (StrongLifts style). Weight per set: reps and weight for every set.",
+        "Same weight: one weight per exercise, tap circles to log reps. Weight per set: reps and weight for every set.",
       ),
       days,
       group(null, [

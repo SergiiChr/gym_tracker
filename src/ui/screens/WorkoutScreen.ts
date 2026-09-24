@@ -54,7 +54,7 @@ export class WorkoutScreen implements Screen {
     );
   }
 
-  /** Stronglifts style: one weight, tap circles to log reps. */
+  /** Same weight style: one weight, tap circles to log reps. */
   private fixedBody(logged: LoggedExercise, summary: HTMLElement): HTMLElement {
     const unit = this.app.store.data.settings.unit;
     const circles = logged.sets.map((set, i) => {

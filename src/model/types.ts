@@ -2,7 +2,7 @@ export type Unit = "kg" | "lbs";
 
 /**
  * How a plan's workouts are logged.
- * "fixed": one weight per exercise, sets logged by tapping circles (Stronglifts style).
+ * "fixed": one weight per exercise, sets logged by tapping circles.
  * "perSet": every set has its own reps and weight inputs.
  */
 export type PlanMode = "fixed" | "perSet";

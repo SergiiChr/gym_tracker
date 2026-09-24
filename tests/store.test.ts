@@ -9,7 +9,7 @@ describe("Store", () => {
   it("starts with presets and persists changes", () => {
     const storage = new MemoryStorage();
     const store = new Store(storage);
-    expect(store.data.plans.map((p) => p.name)).toEqual(["StrongLifts 5×5", "Dorian Yates Blood & Guts"]);
+    expect(store.data.plans.map((p) => p.name)).toEqual(["5×5 A/B", "HIT 4-day split"]);
     store.data.settings.defaultReps = 8;
     store.save();
     expect(new Store(storage).data.settings.defaultReps).toBe(8);

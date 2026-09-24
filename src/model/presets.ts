@@ -77,8 +77,8 @@ class PresetBuilder {
     };
   }
 
-  /** Blood & Guts style: warm-up set, then one all-out working set; only the top set progresses. */
-  yates(name: string, reps: number): Exercise {
+  /** High-intensity style: warm-up set, then one all-out working set; only the top set progresses. */
+  topSet(name: string, reps: number): Exercise {
     return this.exercise({
       name,
       sets: [
@@ -91,7 +91,7 @@ class PresetBuilder {
     });
   }
 
-  stronglifts(): { exercises: Exercise[]; plan: Plan } {
+  fiveByFive(): { exercises: Exercise[]; plan: Plan } {
     const fiveByFive = (kg: number): [number, number][] => Array.from({ length: 5 }, () => [5, kg]);
     const squat = this.exercise({ name: "Squat", sets: fiveByFive(20) });
     const bench = this.exercise({ name: "Bench Press", sets: fiveByFive(20) });
@@ -102,18 +102,18 @@ class PresetBuilder {
       exercises: [squat, bench, row, ohp, deadlift],
       plan: {
         id: newId(),
-        name: "StrongLifts 5×5",
+        name: "5×5 A/B",
         mode: "fixed",
         days: [day("Workout A", [squat, bench, row]), day("Workout B", [squat, ohp, deadlift])],
       },
     };
   }
 
-  dorianYates(): { exercises: Exercise[]; plan: Plan } {
-    const y = (name: string, reps: number): Exercise => this.yates(name, reps);
+  hitSplit(): { exercises: Exercise[]; plan: Plan } {
+    const y = (name: string, reps: number): Exercise => this.topSet(name, reps);
     const chest = [y("Incline Barbell Press", 8), y("Flat Dumbbell Press", 8), y("Incline Dumbbell Fly", 8)];
     const biceps = [y("Incline Dumbbell Curl", 8), y("EZ-Bar Preacher Curl", 8)];
-    const back = [y("Pull-down", 8), y("Dumbbell Pullover", 8), y("One-arm Dumbbell Row", 8), y("Yates Row", 8), y("Rack Deadlift", 6)];
+    const back = [y("Pull-down", 8), y("Dumbbell Pullover", 8), y("One-arm Dumbbell Row", 8), y("Underhand Barbell Row", 8), y("Rack Deadlift", 6)];
     const shoulders = [y("Seated Dumbbell Press", 8), y("Side Lateral Raise", 10), y("Rear Delt Raise", 10)];
     const triceps = [y("Triceps Pushdown", 8), y("Lying Triceps Extension", 8)];
     const legs = [
@@ -128,7 +128,7 @@ class PresetBuilder {
       exercises: [...chest, ...biceps, ...back, ...shoulders, ...triceps, ...legs],
       plan: {
         id: newId(),
-        name: "Dorian Yates Blood & Guts",
+        name: "HIT 4-day split",
         mode: "perSet",
         days: [
           day("Chest & Biceps", [...chest, ...biceps]),
@@ -151,7 +151,7 @@ function day(name: string, exercises: Exercise[]): PlanDay {
  */
 export function addPresets(data: AppData): void {
   const builder = new PresetBuilder(data.settings.unit);
-  const programs = [builder.stronglifts(), builder.dorianYates()];
+  const programs = [builder.fiveByFive(), builder.hitSplit()];
   const byName = new Map(data.exercises.map((e) => [e.name.toLowerCase(), e]));
   for (const program of programs) {
     const resolved = new Map<string, string>();

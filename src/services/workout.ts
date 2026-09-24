@@ -49,7 +49,7 @@ export function previousSet(data: AppData, exerciseId: string, mode: PlanMode, i
   return undefined;
 }
 
-/** Stronglifts-style tap: empty → target reps → one less each tap → back to empty after 0. */
+/** Circle tap: empty → target reps → one less each tap → back to empty after 0. */
 export function cycleReps(set: LoggedSet): void {
   if (set.reps === null) set.reps = set.targetReps;
   else if (set.reps > 0) set.reps -= 1;

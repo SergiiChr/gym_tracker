@@ -56,7 +56,7 @@ describe("workout", () => {
     expect(previousSet(data, "missing", "fixed", 0)).toBeUndefined();
   });
 
-  it("cycles reps like StrongLifts", () => {
+  it("cycles reps on each circle tap", () => {
     const set = { targetReps: 2, reps: null as number | null, weight: 0 };
     const seen = Array.from({ length: 4 }, () => (cycleReps(set), set.reps));
     expect(seen).toEqual([2, 1, 0, null]);
