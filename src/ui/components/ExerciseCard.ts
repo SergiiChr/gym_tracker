@@ -134,12 +134,11 @@ export class ExerciseCard {
         step: 1,
         decimal: false,
         label: "Reps",
+        // Adjusting reps doesn't complete the set: it's often done ahead of the set. Only the checkbox does.
         onChange: (value) => {
-          const wasDone = set.done;
           set.reps = value;
-          set.done = true;
           paint();
-          this.changed(!wasDone);
+          host.save();
         },
       });
       const weight = logged.bodyweight
