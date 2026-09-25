@@ -50,9 +50,15 @@ export interface Plan {
 
 export interface LoggedSet {
   targetReps: number;
-  /** Null until the set is done. */
-  reps: number | null;
+  reps: number;
   weight: number;
+  /** Only completed sets are kept when a workout is finished. */
+  done: boolean;
+  /**
+   * Position of the planned set this came from, or null for a set added during the workout.
+   * Lets sets be reordered, removed or added mid-workout without touching the saved plan.
+   */
+  planIndex: number | null;
 }
 
 export interface LoggedExercise {

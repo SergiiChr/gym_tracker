@@ -11,25 +11,28 @@ export function nextDay(plan: Plan, data: AppData): PlanDay | undefined {
   return plan.days[(index + 1) % plan.days.length];
 }
 
-/** Whether a finished exercise earned a weight increase for next time. */
-export function earnedIncrement(logged: LoggedExercise, exercise: Exercise, rule: IncrementRule): boolean {
-  if (!rule.enabled || exercise.bodyweight || logged.sets.length === 0) return false;
-  const checked = exercise.incrementLastSetOnly ? logged.sets.slice(-1) : logged.sets;
-  return checked.every((s) => (s.reps ?? 0) >= rule.targetReps);
+/**
+ * Whether a finished exercise earned a weight increase for next time.
+ * Checks the planned sets (or only the last one), so a planned set removed or left undone blocks the increase.
+ */
+export function earnedIncrement(logged: LoggedExercise, exercise: Exercise, rule: IncrementRule, plannedSets: number): boolean {
+  if (!rule.enabled || exercise.bodyweight || plannedSets === 0) return false;
+  const indexes = exercise.incrementLastSetOnly ? [plannedSets - 1] : [...Array(plannedSets).keys()];
+  return indexes.every((i) => logged.sets.some((s) => s.planIndex === i && s.done && s.reps >= rule.targetReps));
 }
 
 /**
- * Copies weights used in the workout back to the exercise's scheme for that logging style, then applies auto-increment.
- * Sets are matched by index, so a scheme edited mid-workout keeps its extra sets untouched.
+ * Copies weights of completed sets back to the exercise's scheme for that logging style, then applies auto-increment.
+ * Sets are matched by their planned position, so sets added, moved or removed mid-workout leave the plan's layout as is.
  */
 export function applyResult(logged: LoggedExercise, exercise: Exercise, mode: PlanMode, settings: Settings): void {
   const scheme = exercise.schemes[mode];
-  logged.sets.forEach((set, i) => {
-    const spec = scheme[i];
+  for (const set of logged.sets) {
+    const spec = set.done && set.planIndex !== null ? scheme[set.planIndex] : undefined;
     if (spec) spec.weight = set.weight;
-  });
+  }
   const rule = effectiveRule(exercise, settings);
-  if (!earnedIncrement(logged, exercise, rule)) return;
+  if (!earnedIncrement(logged, exercise, rule, scheme.length)) return;
   const targets = exercise.incrementLastSetOnly ? scheme.slice(-1) : scheme;
   for (const spec of targets) spec.weight += rule.step;
 }
