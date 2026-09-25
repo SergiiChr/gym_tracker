@@ -5,8 +5,9 @@ import { h, svg } from "../dom";
 import { ICONS } from "../icons";
 import { makeSortable, moveItem, swipeToDelete } from "./gestures";
 import { confirmDelete } from "./layout";
-import { actionRow, dragHandle } from "./list";
-import { stepper, weightInput } from "./stepper";
+import { numberInput } from "./forms";
+import { actionRow } from "./list";
+import { weightInput } from "./stepper";
 
 export interface CardHost {
   mode: PlanMode;
@@ -63,7 +64,7 @@ export class ExerciseCard {
       const load = bodyweight || !first ? "" : ` · ${formatWeight(first.weight)} ${this.host.unit}`;
       this.detail.textContent = `${sets.length}×${first?.targetReps ?? 0}${load}`;
     } else {
-      this.detail.textContent = `${sets.length} ${sets.length === 1 ? "set" : "sets"}${bodyweight ? "" : ` · ${this.host.unit}`}`;
+      this.detail.textContent = `${sets.length} ${sets.length === 1 ? "set" : "sets"}`;
     }
   }
 
@@ -86,7 +87,7 @@ export class ExerciseCard {
       const paint = (): void => {
         circle.textContent = String(set.reps);
         circle.className = `circle ${set.done ? repsClass(set) : "todo"}`;
-        this.paintHint(prev, set, false);
+        this.paintHint(prev, set);
       };
       circle.addEventListener("click", () => {
         const wasDone = set.done;
@@ -122,19 +123,28 @@ export class ExerciseCard {
     return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), actions);
   }
 
-  /** Weight per set style: reps and weight steppers plus a done checkbox per set. */
+  /** Weight per set style: a table of sets with last time's result, plain number cells and a done checkbox. */
   private perSetBody(): HTMLElement {
     const { logged, host } = this;
     const numbered = logged.sets.length > 1;
+    const layout = logged.bodyweight ? "set-row no-weight" : "set-row";
+    const head = h(
+      "li",
+      { className: `set-head ${layout}` },
+      h("span", {}, "Set"),
+      h("span", {}, "Last"),
+      logged.bodyweight ? null : h("span", {}, host.unit),
+      h("span", {}, "Reps"),
+      h("span", {}),
+    );
     const rows = logged.sets.map((set, i) => {
-      const hint = h("div", { className: "set-hint" });
-      const check = h("button", { type: "button", className: "set-check", title: "Mark set as done", ariaLabel: "Done" }, svg(ICONS.check));
-      const reps = stepper({
+      const last = h("span", { className: "set-last" });
+      const check = h("button", { type: "button", className: "set-check", ariaLabel: "Done" }, svg(ICONS.check));
+      // Editing numbers doesn't complete the set: it's often done ahead of the set. Only the checkbox does.
+      const reps = numberInput({
         value: set.reps,
-        step: 1,
-        decimal: false,
         label: "Reps",
-        // Adjusting reps doesn't complete the set: it's often done ahead of the set. Only the checkbox does.
+        className: "num-cell",
         onChange: (value) => {
           set.reps = value;
           paint();
@@ -143,37 +153,27 @@ export class ExerciseCard {
       });
       const weight = logged.bodyweight
         ? null
-        : stepper({
+        : numberInput({
             value: set.weight,
-            step: host.step,
             decimal: true,
             label: `Weight in ${host.unit}`,
+            className: "num-cell",
             onChange: (value) => {
               set.weight = value;
               paint();
               host.save();
             },
           });
-      const li = h(
-        "li",
-        { className: "row" },
-        h(
-          "div",
-          { className: "row-content set-row" },
-          dragHandle(),
-          numbered ? h("span", { className: "set-num" }, String(i + 1)) : null,
-          reps,
-          weight,
-          check,
-          hint,
-        ),
-      );
+      // The set number doubles as the drag handle.
+      const num = h("span", { className: "set-num drag-handle", title: "Drag to reorder" }, numbered ? String(i + 1) : "");
+      const li = h("li", { className: "row set-li" }, h("div", { className: `row-content ${layout}` }, num, last, weight, reps, check));
       const paint = (): void => {
-        reps.className = `stepper stepper-reps ${set.done ? repsClass(set) : ""}`;
+        reps.className = `num-cell ${set.done ? repsClass(set) : ""}`;
         check.classList.toggle("on", set.done);
         check.title = set.done ? "Done. Tap to undo" : "Mark set as done";
         li.classList.toggle("todo", !set.done);
-        this.paintHint(hint, set, true);
+        li.classList.toggle("done", set.done);
+        this.paintLast(last, set);
       };
       check.addEventListener("click", () => {
         set.done = !set.done;
@@ -184,7 +184,7 @@ export class ExerciseCard {
       return swipeToDelete(li, () => this.removeSet(i));
     });
     const add = actionRow("Add set", "Add a set to this workout only", () => this.addSet());
-    const list = h("ul", { className: "list set-list" }, ...rows, add);
+    const list = h("ul", { className: "list set-list" }, head, ...rows, add);
     makeSortable(list, (from, to) => {
       moveItem(logged.sets, from, to);
       host.save();
@@ -207,16 +207,23 @@ export class ExerciseCard {
     });
   }
 
-  /** Last time's result for this planned set; green when today's weight is higher. */
-  private paintHint(el: HTMLElement, set: LoggedSet, withWeight: boolean): void {
-    const { logged } = this;
-    const prev = this.host.previous(logged, set);
-    const up = prev !== undefined && !logged.bodyweight && set.weight > prev.weight;
+  /** Last time's reps under a circle; green ↑ when today's weight is higher. */
+  private paintHint(el: HTMLElement, set: LoggedSet): void {
+    const prev = this.host.previous(this.logged, set);
+    const up = prev !== undefined && !this.logged.bodyweight && set.weight > prev.weight;
     el.classList.toggle("up", up);
-    el.title = up ? "Weight is up since last time" : "Result from last workout";
-    if (!prev) el.textContent = "";
-    else if (up) el.textContent = withWeight ? `↑ was ${formatWeight(prev.weight)}` : "↑";
-    else el.textContent = withWeight && !logged.bodyweight ? `last ${prev.reps} × ${formatWeight(prev.weight)}` : `${prev.reps}`;
+    el.title = up ? "Weight is up since last time" : "Reps from last workout";
+    el.textContent = prev ? (up ? "↑" : String(prev.reps)) : "";
+  }
+
+  /** Last time's weight × reps for this planned set; green ↑ when today's weight is higher. */
+  private paintLast(el: HTMLElement, set: LoggedSet): void {
+    const prev = this.host.previous(this.logged, set);
+    const up = prev !== undefined && !this.logged.bodyweight && set.weight > prev.weight;
+    el.classList.toggle("up", up);
+    el.title = up ? "Weight is up since last time" : "Last workout";
+    if (!prev) el.textContent = "–";
+    else el.textContent = `${up ? "↑ " : ""}${this.logged.bodyweight ? prev.reps : `${formatWeight(prev.weight)} × ${prev.reps}`}`;
   }
 }
 

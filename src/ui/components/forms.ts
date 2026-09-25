@@ -1,3 +1,4 @@
+import { formatWeight } from "../../model/units";
 import { h } from "../dom";
 
 function field(label: string, control: HTMLElement, tip: string): HTMLLIElement {
@@ -9,22 +10,41 @@ export function textRow(label: string, value: string, onChange: (value: string) 
   return field(label, input, tip);
 }
 
-/** Non-negative integer input; shows the numeric keypad on phones and reverts invalid input. */
-export function integerInput(value: number, onChange: (value: number) => void, className = "field-input number"): HTMLInputElement {
+interface NumberInputOptions {
+  value: number;
+  /** Decimals and the decimal keypad for weights; whole numbers otherwise. */
+  decimal?: boolean;
+  label?: string;
+  className?: string;
+  onChange: (value: number) => void;
+}
+
+/** Non-negative number input; shows the matching keypad on phones and reverts invalid input. */
+export function numberInput(options: NumberInputOptions): HTMLInputElement {
+  const { decimal = false, onChange } = options;
+  let current = options.value;
+  const format = (v: number): string => (decimal ? formatWeight(v) : String(v));
   const input = h("input", {
     type: "text",
-    inputMode: "numeric",
-    pattern: "[0-9]*",
-    value: String(value),
-    className,
+    inputMode: decimal ? "decimal" : "numeric",
+    value: format(current),
+    className: options.className ?? "field-input number",
+    ariaLabel: options.label ?? "",
     onfocus: () => input.select(),
     onchange: () => {
-      const parsed = parseInt(input.value, 10);
-      if (Number.isFinite(parsed) && parsed >= 0) onChange((value = parsed));
-      else input.value = String(value);
+      const parsed = decimal ? parseFloat(input.value.replace(",", ".")) : parseInt(input.value, 10);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        current = decimal ? Math.round(parsed * 100) / 100 : parsed;
+        onChange(current);
+      }
+      input.value = format(current);
     },
   });
   return input;
+}
+
+export function integerInput(value: number, onChange: (value: number) => void, className?: string): HTMLInputElement {
+  return numberInput({ value, onChange, className });
 }
 
 export function numberRow(label: string, value: number, onChange: (value: number) => void, tip = ""): HTMLLIElement {
