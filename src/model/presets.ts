@@ -2,7 +2,7 @@ import { MY_PRESET } from "./myPreset";
 import { convertWeight, DEFAULT_STEP } from "./units";
 import type { AppData, Exercise, Plan, PlanDay, PlanMode, SetSpec, Settings, Unit } from "./types";
 
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 export function newId(): string {
   return crypto.randomUUID();

@@ -8,7 +8,7 @@ const logged = (reps: (number | null)[], weight = 100): LoggedExercise => ({
   exerciseId: "x",
   name: "x",
   bodyweight: false,
-  sets: reps.map((r) => ({ targetReps: 5, reps: r, weight })),
+  sets: reps.map((r, i) => ({ targetReps: 5, reps: r ?? 5, weight, done: r !== null, planIndex: i })),
 });
 
 describe("nextDay", () => {

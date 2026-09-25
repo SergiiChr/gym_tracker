@@ -1,5 +1,5 @@
 import { newId } from "../model/presets";
-import type { AppData, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
+import type { AppData, LoggedExercise, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
 import { applyResult } from "./progression";
 
 export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutLog {
@@ -11,7 +11,7 @@ export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutL
         exerciseId: exercise.id,
         name: exercise.name,
         bodyweight: exercise.bodyweight,
-        sets: exercise.schemes[plan.mode].map((s) => ({ targetReps: s.reps, reps: null, weight: s.weight })),
+        sets: exercise.schemes[plan.mode].map((s, i) => ({ targetReps: s.reps, reps: s.reps, weight: s.weight, done: false, planIndex: i })),
       },
     ];
   });
@@ -28,32 +28,56 @@ export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutL
   };
 }
 
-/** Saves the workout to history and updates exercise weights for next time. */
+export function hasUnfinishedSets(workout: WorkoutLog): boolean {
+  return workout.exercises.some((e) => e.sets.some((s) => !s.done));
+}
+
+export function isComplete(logged: LoggedExercise): boolean {
+  return logged.sets.length > 0 && logged.sets.every((s) => s.done);
+}
+
+/** A copy of the last set that belongs to this workout only. */
+export function addSet(logged: LoggedExercise): void {
+  const last = logged.sets.at(-1);
+  logged.sets.push({ targetReps: last?.targetReps ?? 5, reps: last?.targetReps ?? 5, weight: last?.weight ?? 0, done: false, planIndex: null });
+}
+
+/** Saves completed sets to history, drops the rest, and updates exercise weights for next time. */
 export function finishWorkout(data: AppData, workout: WorkoutLog): void {
   workout.finishedAt = Date.now();
   for (const logged of workout.exercises) {
     const exercise = data.exercises.find((e) => e.id === logged.exerciseId);
     if (exercise) applyResult(logged, exercise, workout.mode, data.settings);
+    logged.sets = logged.sets.filter((s) => s.done);
   }
+  workout.exercises = workout.exercises.filter((e) => e.sets.length > 0);
   data.history.unshift(workout);
   data.activeWorkout = null;
 }
 
-/** The same set from the latest finished workout in this logging style that included this exercise. */
-export function previousSet(data: AppData, exerciseId: string, mode: PlanMode, index: number): LoggedSet | undefined {
+/** The same planned set from the latest finished workout in this logging style that included this exercise. */
+export function previousSet(data: AppData, exerciseId: string, mode: PlanMode, planIndex: number | null): LoggedSet | undefined {
+  if (planIndex === null) return undefined;
   for (const log of data.history) {
     if (log.mode !== mode) continue;
     const logged = log.exercises.find((e) => e.exerciseId === exerciseId);
-    if (logged) return logged.sets[index];
+    const set = logged?.sets.find((s) => s.planIndex === planIndex && s.done);
+    if (set) return set;
   }
   return undefined;
 }
 
-/** Circle tap: empty → target reps → one less each tap → back to empty after 0. */
+/** Circle tap: not done → done at target reps → one rep less each tap → not done again after 0. */
 export function cycleReps(set: LoggedSet): void {
-  if (set.reps === null) set.reps = set.targetReps;
-  else if (set.reps > 0) set.reps -= 1;
-  else set.reps = null;
+  if (!set.done) {
+    set.done = true;
+    set.reps = set.targetReps;
+  } else if (set.reps > 0) {
+    set.reps -= 1;
+  } else {
+    set.done = false;
+    set.reps = set.targetReps;
+  }
 }
 
 export function durationMinutes(log: WorkoutLog): number {

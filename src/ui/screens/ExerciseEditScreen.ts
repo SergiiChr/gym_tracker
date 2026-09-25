@@ -2,11 +2,11 @@ import type { Exercise, PlanMode, Settings } from "../../model/types";
 import { formatWeight, STEP_OPTIONS } from "../../model/units";
 import { effectiveRule } from "../../services/progression";
 import type { App } from "../App";
-import { integerInput, numberRow, segmentedRow, selectRow, textRow, toggleRow } from "../components/forms";
+import { numberRow, segmentedRow, selectRow, textRow, toggleRow } from "../components/forms";
 import { swipeToDelete } from "../components/gestures";
 import { confirmDelete, emptyState, page } from "../components/layout";
 import { actionRow, group } from "../components/list";
-import { weightInput } from "../components/weightInput";
+import { stepper, weightInput } from "../components/stepper";
 import { h } from "../dom";
 import { MODE_LABELS } from "../format";
 import type { Screen } from "../Router";
@@ -97,8 +97,7 @@ export class ExerciseEditScreen implements Screen {
               "div",
               { className: "row-content set-edit" },
               h("span", { className: "row-title" }, `Set ${i + 1}`),
-              integerInput(set.reps, (reps) => ((set.reps = reps), save()), "reps-input"),
-              h("span", { className: "muted" }, "reps"),
+              stepper({ value: set.reps, step: 1, decimal: false, label: "Reps", onChange: (reps) => ((set.reps = reps), save()) }),
               fixed ? null : weight(set.weight, (w) => ((set.weight = w), save())),
             ),
           ),

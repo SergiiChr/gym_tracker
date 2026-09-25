@@ -25,7 +25,7 @@ export class HistoryDetailScreen implements Screen {
       group(
         ex.name,
         ex.sets.map((set, i) => {
-          if (set.reps === null) return row({ title: `Set ${i + 1}`, detail: "skipped" });
+          if (!set.done) return row({ title: `Set ${i + 1}`, detail: "skipped" });
           const reps = `${set.reps}/${set.targetReps} reps`;
           return row({ title: `Set ${i + 1}`, detail: ex.bodyweight ? reps : `${reps} × ${formatWeight(set.weight)} ${unit}` });
         }),

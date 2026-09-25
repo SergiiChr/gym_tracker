@@ -52,7 +52,7 @@ describe("Store", () => {
     storage.setItem("gym-tracker", JSON.stringify(v1));
     const store = new Store(storage);
     const squat = store.data.exercises.find((e) => e.name === "Squat")!;
-    expect(store.data.version).toBe(2);
+    expect(store.data.version).toBe(3);
     expect(squat.schemes.fixed).toEqual(squat.schemes.perSet);
     expect(squat.schemes.fixed).not.toBe(squat.schemes.perSet);
     expect("sets" in squat).toBe(false);
@@ -68,6 +68,23 @@ describe("Store", () => {
     expect(store.data.defaultPlanId).toBe("plan1");
     expect(store.data.settings.unit).toBe("kg");
     expect(store.data.history).toEqual([]);
+  });
+
+  it("upgrades version 2 history to done flags", () => {
+    const storage = new MemoryStorage();
+    const v2 = presetData() as unknown as { version: number; history: unknown[] };
+    v2.version = 2;
+    const sets = [
+      { targetReps: 5, reps: 5, weight: 60 },
+      { targetReps: 5, reps: null, weight: 60 },
+    ];
+    v2.history = [{ id: "w", planId: "p", planName: "P", mode: "fixed", dayId: "d", dayName: "D", startedAt: 0, finishedAt: 1, exercises: [{ exerciseId: "e", name: "E", bodyweight: false, sets }] }];
+    storage.setItem("gym-tracker", JSON.stringify(v2));
+    const [log] = new Store(storage).data.history;
+    expect(log?.exercises[0]?.sets).toEqual([
+      { targetReps: 5, reps: 5, weight: 60, done: true, planIndex: 0 },
+      { targetReps: 5, reps: 5, weight: 60, done: false, planIndex: 1 },
+    ]);
   });
 
   it("round-trips export and rejects foreign JSON", () => {

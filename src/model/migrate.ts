@@ -1,5 +1,5 @@
 import { bothModes, DATA_VERSION, emptyData, newId } from "./presets";
-import type { AppData, Exercise, Plan, SetSpec } from "./types";
+import type { AppData, Exercise, LoggedSet, Plan, SetSpec } from "./types";
 
 type ExerciseV1 = Omit<Exercise, "schemes"> & { schemes?: Exercise["schemes"]; sets?: SetSpec[] };
 
@@ -13,6 +13,23 @@ export function migrate(data: AppData): AppData {
       delete exercise.sets;
     }
     data.version = 2;
+  }
+  if (data.version === 2) {
+    // v3: sets carry an explicit done flag and their planned position instead of null reps.
+    // Hand-written backups may leave these out; withDefaults fills them in afterwards.
+    const logs = [...(data.history ?? []), ...(data.activeWorkout ? [data.activeWorkout] : [])];
+    for (const log of logs) {
+      for (const exercise of log.exercises) {
+        exercise.sets = (exercise.sets as (Omit<LoggedSet, "reps"> & { reps: number | null })[]).map((set, i) => ({
+          targetReps: set.targetReps,
+          reps: set.reps ?? set.targetReps,
+          weight: set.weight,
+          done: set.reps !== null,
+          planIndex: i,
+        }));
+      }
+    }
+    data.version = 3;
   }
   return data;
 }
