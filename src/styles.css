@@ -597,15 +597,13 @@ select.field-input {
   color: var(--red);
 }
 
-.set-prev,
-.set-hint {
+.set-prev {
   font-size: 12px;
   color: var(--muted);
   min-height: 1em;
 }
 
-.set-prev.up,
-.set-hint.up {
+.set-prev.up {
   color: var(--green);
   font-weight: 600;
 }
@@ -630,21 +628,101 @@ select.field-input {
   border-radius: 0;
 }
 
+/* Table columns: set, last time, weight, reps, done. */
 .set-row {
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 64px 52px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 16px;
 }
 
-.set-num {
-  width: 1.1em;
+.set-row.no-weight {
+  grid-template-columns: 28px minmax(0, 1fr) 52px 32px;
+}
+
+.set-head {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
-  font-variant-numeric: tabular-nums;
+}
+
+.set-head > span:nth-child(n + 3) {
   text-align: center;
 }
 
-.set-row .stepper-weight {
-  margin-left: auto;
+/* Exercise editor: set number, spacer, [weight], reps. */
+.plan-set-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 104px;
+  gap: 12px;
+  align-items: center;
+}
+
+.plan-set-row.with-weight {
+  grid-template-columns: 28px minmax(0, 1fr) 124px 104px;
+}
+
+.plan-set-row .stepper {
+  width: 100%;
+}
+
+.plan-set-row .stepper-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.set-head.plan-set-row {
+  padding: 8px 16px 2px;
+}
+
+.set-num {
+  color: var(--muted);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-last {
+  color: var(--muted);
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-last.up {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.num-cell {
+  width: 100%;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--fill);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.num-cell.done {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.num-cell.partial {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.set-li.done > .row-content {
+  background: linear-gradient(rgba(52, 199, 89, 0.15), rgba(52, 199, 89, 0.15)), var(--cell);
 }
 
 .set-check {
@@ -669,16 +747,6 @@ select.field-input {
   border-color: var(--green);
   background: var(--green);
   color: #fff;
-}
-
-.set-hint {
-  flex-basis: 100%;
-  min-height: 0;
-  padding-left: 30px;
-}
-
-.set-hint:empty {
-  display: none;
 }
 
 .set-actions {
