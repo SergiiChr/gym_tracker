@@ -654,9 +654,34 @@ select.field-input {
   text-align: center;
 }
 
+/* Exercise editor: set number, spacer, [weight], reps. */
+.plan-set-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 104px;
+  gap: 12px;
+  align-items: center;
+}
+
+.plan-set-row.with-weight {
+  grid-template-columns: 28px minmax(0, 1fr) 124px 104px;
+}
+
+.plan-set-row .stepper {
+  width: 100%;
+}
+
+.plan-set-row .stepper-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.set-head.plan-set-row {
+  padding: 8px 16px 2px;
+}
+
 .set-num {
   color: var(--muted);
-  text-align: center;
+  text-align: left;
   font-variant-numeric: tabular-nums;
 }
 

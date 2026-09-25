@@ -40,7 +40,7 @@ export class ExerciseEditScreen implements Screen {
         toggleRow("Bodyweight", exercise.bodyweight, (on) => ((exercise.bodyweight = on), commit()), "Bodyweight exercises have no weight and no auto-increment"),
         numberRow("Rest timer (sec)", exercise.restSec, (sec) => ((exercise.restSec = sec), save()), "Countdown shown after each logged set"),
       ]),
-      this.setsGroup(exercise, settings),
+      ...this.setsGroups(exercise, settings),
       exercise.bodyweight ? null : this.incrementGroup(exercise, settings),
       group(null, [
         actionRow(
@@ -57,67 +57,81 @@ export class ExerciseEditScreen implements Screen {
     );
   }
 
-  private setsGroup(exercise: Exercise, settings: Settings): HTMLElement {
+  /** Logging style switch, the shared weight (Same weight style) and a table of sets under column headers. */
+  private setsGroups(exercise: Exercise, settings: Settings): HTMLElement[] {
     const save = (): void => this.app.store.save();
     const sets = exercise.schemes[this.mode];
     const fixed = this.mode === "fixed";
-    const weight = (value: number, onChange: (w: number) => void): HTMLElement | null =>
-      exercise.bodyweight ? null : weightInput(value, settings.increment.step, settings.unit, onChange);
+    const perSetWeight = !fixed && !exercise.bodyweight;
+    const layout = perSetWeight ? "plan-set-row with-weight" : "plan-set-row";
+    const groups: HTMLElement[] = [];
 
-    const rows: HTMLLIElement[] = [];
     const { modePath } = this;
     if (modePath) {
       const modes = (Object.keys(MODE_LABELS) as PlanMode[]).map((value) => ({ value, label: MODE_LABELS[value] }));
-      rows.push(segmentedRow(modes, this.mode, (mode) => this.app.router.go(modePath(mode)), "Each logging style keeps its own sets and weights"));
-    }
-    if (fixed && !exercise.bodyweight) {
-      rows.push(
-        h(
-          "li",
-          { className: "row", title: "Working weight for all sets" },
-          h(
-            "div",
-            { className: "row-content set-edit" },
-            h("span", { className: "row-title" }, "Weight"),
-            weight(sets[0]?.weight ?? 0, (w) => {
-              for (const set of sets) set.weight = w;
-              save();
-            }),
-          ),
-        ),
+      groups.push(
+        group("Logging style", [segmentedRow(modes, this.mode, (mode) => this.app.router.go(modePath(mode)), "Each logging style keeps its own sets and weights")]),
       );
     }
-    sets.forEach((set, i) =>
-      rows.push(
-        swipeToDelete(
+    if (fixed && !exercise.bodyweight) {
+      groups.push(
+        group("Weight", [
           h(
             "li",
-            { className: "row", title: "Reps for this set. Swipe left to delete" },
+            { className: "row", title: "Working weight for all sets" },
             h(
               "div",
               { className: "row-content set-edit" },
-              h("span", { className: "row-title" }, `Set ${i + 1}`),
-              stepper({ value: set.reps, step: 1, decimal: false, label: "Reps", onChange: (reps) => ((set.reps = reps), save()) }),
-              fixed ? null : weight(set.weight, (w) => ((set.weight = w), save())),
+              h("span", { className: "row-title" }, "All sets"),
+              weightInput(sets[0]?.weight ?? 0, settings.increment.step, settings.unit, (w) => {
+                for (const set of sets) set.weight = w;
+                save();
+              }),
             ),
           ),
-          () =>
-            confirmDelete(`set ${i + 1}`, () => {
-              sets.splice(i, 1);
-              this.app.commit();
-            }),
+        ]),
+      );
+    }
+
+    const head = h(
+      "li",
+      { className: `set-head ${layout}` },
+      h("span", {}, "Set"),
+      h("span", {}),
+      perSetWeight ? h("span", {}, settings.unit) : null,
+      h("span", {}, "Reps"),
+    );
+    const rows = sets.map((set, i) =>
+      swipeToDelete(
+        h(
+          "li",
+          { className: "row", title: "Swipe left to delete" },
+          h(
+            "div",
+            { className: `row-content ${layout}` },
+            h("span", { className: "set-num" }, String(i + 1)),
+            h("span", {}),
+            perSetWeight
+              ? stepper({ value: set.weight, step: settings.increment.step, decimal: true, label: `Weight in ${settings.unit}`, onChange: (w) => ((set.weight = w), save()) })
+              : null,
+            stepper({ value: set.reps, step: 1, decimal: false, label: "Reps", onChange: (reps) => ((set.reps = reps), save()) }),
+          ),
         ),
+        () =>
+          confirmDelete(`set ${i + 1}`, () => {
+            sets.splice(i, 1);
+            this.app.commit();
+          }),
       ),
     );
-    rows.push(
-      actionRow("Add set", "Add a set copying the last one", () => {
-        const last = sets.at(-1);
-        sets.push({ reps: last?.reps ?? settings.defaultReps, weight: last?.weight ?? 0 });
-        this.app.commit();
-      }),
-    );
+    const add = actionRow("Add set", "Add a set copying the last one", () => {
+      const last = sets.at(-1);
+      sets.push({ reps: last?.reps ?? settings.defaultReps, weight: last?.weight ?? 0 });
+      this.app.commit();
+    });
     const footer = `Used by "${MODE_LABELS[this.mode]}" plans. Weights update after each finished workout.`;
-    return group("Sets", rows, footer);
+    groups.push(group("Sets", [head, ...rows, add], footer));
+    return groups;
   }
 
   private incrementGroup(exercise: Exercise, settings: Settings): HTMLElement {
