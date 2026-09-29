@@ -5,9 +5,21 @@ function field(label: string, control: HTMLElement, tip: string): HTMLLIElement 
   return h("li", { className: "row", title: tip }, h("label", { className: "row-content field" }, h("span", { className: "row-title" }, label), control));
 }
 
+/** Text is selected on focus, so typing replaces a default like "New exercise" instead of adding to it. */
 export function textRow(label: string, value: string, onChange: (value: string) => void, tip = ""): HTMLLIElement {
-  const input = h("input", { type: "text", value, className: "field-input", onchange: () => onChange(input.value.trim() || value) });
+  const input = h("input", {
+    type: "text",
+    value,
+    className: "field-input",
+    onfocus: () => input.select(),
+    onchange: () => onChange(input.value.trim() || value),
+  });
   return field(label, input, tip);
+}
+
+export function searchInput(placeholder: string, onInput: (query: string) => void): HTMLInputElement {
+  const input = h("input", { type: "search", className: "search", placeholder, ariaLabel: placeholder, oninput: () => onInput(input.value.trim()) });
+  return input;
 }
 
 interface NumberInputOptions {

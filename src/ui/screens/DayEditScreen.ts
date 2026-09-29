@@ -1,6 +1,7 @@
 import { newExercise } from "../../model/presets";
 import type { App } from "../App";
-import { actionSheet, confirmSheet } from "../components/actionSheet";
+import { confirmSheet } from "../components/actionSheet";
+import { exercisePicker } from "../components/exercisePicker";
 import { textRow } from "../components/forms";
 import { makeSortable, moveItem, swipeToDelete } from "../components/gestures";
 import { confirmDelete, emptyState, page } from "../components/layout";
@@ -78,27 +79,19 @@ export class DayEditScreen implements Screen {
     const { store, router } = this.app;
     const day = store.plan(this.planId)?.days.find((d) => d.id === this.dayId);
     if (!day) return;
-    const available = store.data.exercises
-      .filter((e) => !day.exerciseIds.includes(e.id))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    actionSheet("Add exercise", [
-      {
-        label: "＋ New exercise",
-        onSelect: () => {
-          const exercise = newExercise(store.data.settings);
-          store.data.exercises.push(exercise);
-          day.exerciseIds.push(exercise.id);
-          store.save();
-          router.go(`${dayPath}/exercises/${exercise.id}`);
-        },
+    exercisePicker(
+      store.data.exercises.filter((e) => !day.exerciseIds.includes(e.id)),
+      (exercise) => {
+        day.exerciseIds.push(exercise.id);
+        this.app.commit();
       },
-      ...available.map((e) => ({
-        label: e.name,
-        onSelect: () => {
-          day.exerciseIds.push(e.id);
-          this.app.commit();
-        },
-      })),
-    ]);
+      (name) => {
+        const exercise = newExercise(store.data.settings, name);
+        store.data.exercises.push(exercise);
+        day.exerciseIds.push(exercise.id);
+        store.save();
+        router.go(`${dayPath}/exercises/${exercise.id}`);
+      },
+    );
   }
 }

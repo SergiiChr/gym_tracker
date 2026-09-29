@@ -24,10 +24,10 @@ export function bothModes(sets: SetSpec[]): Record<PlanMode, SetSpec[]> {
 }
 
 /** Blank exercise built from the defaults in settings. */
-export function newExercise(settings: Settings): Exercise {
+export function newExercise(settings: Settings, name = "New exercise"): Exercise {
   return {
     id: newId(),
-    name: "New exercise",
+    name,
     bodyweight: false,
     schemes: bothModes(Array.from({ length: settings.defaultSets }, () => ({ reps: settings.defaultReps, weight: 0 }))),
     restSec: settings.defaultRestSec,

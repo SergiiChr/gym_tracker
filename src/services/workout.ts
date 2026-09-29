@@ -1,19 +1,21 @@
 import { newId } from "../model/presets";
-import type { AppData, LoggedExercise, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
+import type { AppData, Exercise, LoggedExercise, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
 import { applyResult } from "./progression";
+
+/** Workout entry prefilled with the exercise's planned sets for this logging style. */
+export function logExercise(exercise: Exercise, mode: PlanMode): LoggedExercise {
+  return {
+    exerciseId: exercise.id,
+    name: exercise.name,
+    bodyweight: exercise.bodyweight,
+    sets: exercise.schemes[mode].map((s, i) => ({ targetReps: s.reps, reps: s.reps, weight: s.weight, done: false, planIndex: i })),
+  };
+}
 
 export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutLog {
   const exercises = day.exerciseIds.flatMap((id) => {
     const exercise = data.exercises.find((e) => e.id === id);
-    if (!exercise) return [];
-    return [
-      {
-        exerciseId: exercise.id,
-        name: exercise.name,
-        bodyweight: exercise.bodyweight,
-        sets: exercise.schemes[plan.mode].map((s, i) => ({ targetReps: s.reps, reps: s.reps, weight: s.weight, done: false, planIndex: i })),
-      },
-    ];
+    return exercise ? [logExercise(exercise, plan.mode)] : [];
   });
   return {
     id: newId(),
@@ -40,6 +42,13 @@ export function isComplete(logged: LoggedExercise): boolean {
 export function addSet(logged: LoggedExercise): void {
   const last = logged.sets.at(-1);
   logged.sets.push({ targetReps: last?.targetReps ?? 5, reps: last?.targetReps ?? 5, weight: last?.weight ?? 0, done: false, planIndex: null });
+}
+
+/** Applies the workout's exercise order to the plan day; day exercises missing from the workout keep their slots. */
+export function applyOrderToDay(workout: WorkoutLog, day: PlanDay): void {
+  const inWorkout = new Set(workout.exercises.map((e) => e.exerciseId));
+  const ordered = workout.exercises.map((e) => e.exerciseId).filter((id) => day.exerciseIds.includes(id));
+  day.exerciseIds = day.exerciseIds.map((id) => (inWorkout.has(id) ? ordered.shift()! : id));
 }
 
 /** Saves completed sets to history, drops the rest, and updates exercise weights for next time. */

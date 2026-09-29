@@ -185,7 +185,8 @@ button {
   overflow: hidden;
 }
 
-.row + .row .row-content::before {
+/* Any visible row before it, so rows hidden by a search don't leave a line on the first shown row. */
+.row:not([hidden]) ~ .row .row-content::before {
   content: "";
   position: absolute;
   top: 0;
@@ -513,6 +514,7 @@ select.field-input {
 
 /* Workout cards */
 .card {
+  position: relative;
   background: var(--cell);
   border-radius: 14px;
   margin: 14px 0;
@@ -538,6 +540,10 @@ select.field-input {
 .card-title {
   font-weight: 600;
   font-size: 18px;
+}
+
+.card summary .drag-handle {
+  align-self: center;
 }
 
 .card-detail {
@@ -763,6 +769,11 @@ select.field-input {
   font-size: 15px;
 }
 
+.set-actions button.destructive {
+  margin-left: auto;
+  color: var(--red);
+}
+
 /* Brief outline on the next set after the rest timer is dismissed. */
 /* Rows paint the outline on their content, which would otherwise cover it. */
 .row.highlight > .row-content {
@@ -913,4 +924,22 @@ select.field-input {
 .sheet-group .sheet-cancel {
   border-top: 0;
   font-weight: 600;
+}
+
+/* Search */
+.search {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--fill);
+  outline: none;
+}
+
+.sheet-group .search {
+  width: auto;
+  margin: 0 12px 12px;
+  flex-shrink: 0;
 }
