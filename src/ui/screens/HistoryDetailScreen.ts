@@ -1,10 +1,9 @@
 import { formatWeight } from "../../model/units";
 import { durationMinutes } from "../../services/workout";
 import type { App } from "../App";
-import { confirmDelete, emptyState, fab, page } from "../components/layout";
-import { actionRow, group, row } from "../components/list";
+import { bottomButton, confirmDelete, deleteButton, emptyState, page } from "../components/layout";
+import { group, row } from "../components/list";
 import { formatDate, h } from "../dom";
-import { ICONS } from "../icons";
 import type { Screen } from "../Router";
 
 export class HistoryDetailScreen implements Screen {
@@ -42,21 +41,18 @@ export class HistoryDetailScreen implements Screen {
         row({ title: "Duration", detail: `${durationMinutes(log)} min` }),
       ]),
       ...exercises,
-      group(null, [
-        actionRow(
-          "Delete workout",
-          "Remove this workout from history",
-          () =>
-            confirmDelete("this workout", () => {
-              store.data.history = store.data.history.filter((l) => l !== log);
-              store.save();
-              router.go("/history");
-            }),
-          true,
-        ),
-      ]),
+      deleteButton(
+        "Delete workout",
+        "Remove this workout from history",
+        () =>
+          confirmDelete("this workout", () => {
+            store.data.history = store.data.history.filter((l) => l !== log);
+            store.save();
+            router.go("/history");
+          }),
+      ),
     );
     if (!this.finished) return summary;
-    return h("div", {}, summary, fab(ICONS.check, "Back to the home screen", () => router.go("/"), "Done"));
+    return h("div", {}, summary, bottomButton("Done", "Back to the home screen", () => router.go("/")));
   }
 }

@@ -2,12 +2,12 @@ import { newExercise } from "../../model/presets";
 import type { Exercise, LoggedExercise, PlanDay, WorkoutLog } from "../../model/types";
 import { applyOrderToDay, durationMinutes, finishWorkout, hasUnfinishedSets, logExercise, previousSet } from "../../services/workout";
 import type { App } from "../App";
-import { actionSheet, confirmSheet } from "../components/actionSheet";
 import { ExerciseCard, type CardHost } from "../components/ExerciseCard";
 import { exercisePicker } from "../components/exercisePicker";
 import { makeSortable, moveItem } from "../components/gestures";
 import { emptyState, fab, page } from "../components/layout";
 import { actionRow, group } from "../components/list";
+import { actionSheet, confirmDialog } from "../components/popups";
 import { RestTimer } from "../components/RestTimer";
 import { h } from "../dom";
 import { ICONS } from "../icons";
@@ -52,13 +52,13 @@ export class WorkoutScreen implements Screen {
     makeSortable(this.cards, (from, to) => {
       moveItem(workout.exercises, from, to);
       store.save();
-      this.askToSavePlan(workout, "Exercise order changed.", "Save order to plan", (day) => applyOrderToDay(workout, day));
+      this.askToSavePlan(workout, "Save new order to plan?", "Save", (day) => applyOrderToDay(workout, day));
     });
     const add = actionRow("Add exercise", "Add an existing or new exercise", () => this.pickExercise(workout, host));
     this.root.append(
       page(workout.dayName, { back: "/", action: elapsed }, h("p", { className: "page-note" }, workout.planName), this.cards, group(null, [add])),
       this.timer.element,
-      fab(ICONS.flag, "Finish or discard the workout", () => this.finishSheet(workout)),
+      fab(ICONS.finish, "Finish or discard the workout", () => this.finishSheet(workout)),
     );
     return this.root;
   }
@@ -79,12 +79,14 @@ export class WorkoutScreen implements Screen {
       const card = new ExerciseCard(logged, host).element;
       this.cards.append(card);
       card.scrollIntoView({ behavior: "smooth", block: "center" });
-      this.askToSavePlan(workout, `${exercise.name} added to this workout.`, "Add to plan too", (day) => {
+      this.askToSavePlan(workout, `Add ${exercise.name} to plan too?`, "Add", (day) => {
         if (!day.exerciseIds.includes(exercise.id)) day.exerciseIds.push(exercise.id);
       });
     };
     exercisePicker(
       store.data.exercises.filter((e) => !inWorkout.has(e.id)),
+      workout.mode,
+      store.data.settings.unit,
       add,
       (name) => {
         // A brand new exercise always goes to the exercise list, whatever is chosen for the plan.
@@ -96,20 +98,20 @@ export class WorkoutScreen implements Screen {
   }
 
   /** Changes already apply to this workout; offers to copy them to the plan day the workout came from. */
-  private askToSavePlan(workout: WorkoutLog, message: string, planLabel: string, update: (day: PlanDay) => void): void {
+  private askToSavePlan(workout: WorkoutLog, question: string, action: string, update: (day: PlanDay) => void): void {
     const { store } = this.app;
     const day = store.plan(workout.planId)?.days.find((d) => d.id === workout.dayId);
     if (!day) return;
-    actionSheet(message, [
-      { label: "This workout only", onSelect: () => {} },
-      {
-        label: planLabel,
-        onSelect: () => {
-          update(day);
-          store.save();
-        },
+    confirmDialog({
+      title: question,
+      message: "It already applies to this workout.",
+      action,
+      cancel: "Not now",
+      onConfirm: () => {
+        update(day);
+        store.save();
       },
-    ]);
+    });
   }
 
   private startRest(logged: LoggedExercise): void {
@@ -132,29 +134,39 @@ export class WorkoutScreen implements Screen {
 
   private finishSheet(workout: WorkoutLog): void {
     const { store, router } = this.app;
-    actionSheet("Workout", [
+    const sets = workout.exercises.flatMap((e) => e.sets);
+    const subtitle = `${workout.planName} · ${durationMinutes(workout)} min · ${sets.filter((s) => s.done).length} of ${sets.length} sets done`;
+    actionSheet(workout.dayName, [
       {
         label: "Finish workout",
+        icon: ICONS.finish,
         onSelect: () => {
           const finish = (): void => {
             finishWorkout(store.data, workout);
             store.save();
             router.go(`/finished/${workout.id}`, true);
           };
-          if (hasUnfinishedSets(workout)) confirmSheet("You have unfinished sets, they will be discarded.", "OK", finish);
-          else finish();
+          if (!hasUnfinishedSets(workout)) return finish();
+          confirmDialog({ title: "Finish workout?", message: "Unfinished sets will be discarded.", action: "Finish", onConfirm: finish });
         },
       },
       {
         label: "Discard workout",
+        icon: ICONS.trash,
         destructive: true,
         onSelect: () =>
-          confirmSheet("Discard this workout? Logged sets will be lost.", "Discard workout", () => {
-            store.data.activeWorkout = null;
-            store.save();
-            router.go("/");
+          confirmDialog({
+            title: "Discard workout?",
+            message: "Logged sets will be lost.",
+            action: "Discard",
+            destructive: true,
+            onConfirm: () => {
+              store.data.activeWorkout = null;
+              store.save();
+              router.go("/");
+            },
           }),
       },
-    ]);
+    ], { subtitle });
   }
 }

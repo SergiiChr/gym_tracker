@@ -1,5 +1,5 @@
 import { h, svg, type Child } from "../dom";
-import { confirmSheet } from "./actionSheet";
+import { confirmDialog } from "./popups";
 import { ICONS } from "../icons";
 
 interface PageOptions {
@@ -36,9 +36,19 @@ export function plusButton(tip: string, onclick: () => void): HTMLButtonElement 
   return navButton(svg(ICONS.plus), tip, onclick);
 }
 
-/** Round floating button in the bottom right corner; `label` turns it into a pill. */
-export function fab(icon: string, tip: string, onclick: () => void, label?: string): HTMLButtonElement {
-  return h("button", { className: label ? "fab fab-wide" : "fab", type: "button", title: tip, onclick }, svg(icon), label);
+/** Round floating button in the bottom right corner. */
+export function fab(icon: string, tip: string, onclick: () => void): HTMLButtonElement {
+  return h("button", { className: "fab", type: "button", title: tip, onclick }, svg(icon));
+}
+
+/** Full width main action pinned to the bottom of the screen. */
+export function bottomButton(label: string, tip: string, onclick: () => void): HTMLButtonElement {
+  return h("button", { className: "btn filled bottom-button", type: "button", title: tip, onclick }, label);
+}
+
+/** Red button at the end of a page for deleting what the page shows. */
+export function deleteButton(label: string, tip: string, onclick: () => void): HTMLButtonElement {
+  return h("button", { className: "btn tonal-danger page-button", type: "button", title: tip, onclick }, label);
 }
 
 export function emptyState(text: string): HTMLElement {
@@ -52,5 +62,5 @@ export function toast(text: string): void {
 }
 
 export function confirmDelete(what: string, onConfirm: () => void): void {
-  confirmSheet(`Delete ${what}? This can't be undone.`, "Delete", onConfirm);
+  confirmDialog({ title: `Delete ${what}?`, message: "This can't be undone.", action: "Delete", destructive: true, onConfirm });
 }

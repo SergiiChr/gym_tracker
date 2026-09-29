@@ -3,7 +3,7 @@ import type { PlanMode } from "../../model/types";
 import type { App } from "../App";
 import { segmentedRow, textRow, toggleRow } from "../components/forms";
 import { makeSortable, moveItem, swipeToDelete } from "../components/gestures";
-import { confirmDelete, emptyState, page } from "../components/layout";
+import { confirmDelete, deleteButton, emptyState, page } from "../components/layout";
 import { actionRow, dragHandle, group, row } from "../components/list";
 import { MODE_LABELS } from "../format";
 import type { Screen } from "../Router";
@@ -66,18 +66,15 @@ export class PlanEditScreen implements Screen {
         "Same weight: one weight per exercise, tap circles to log reps. Weight per set: reps and weight for every set.",
       ),
       days,
-      group(null, [
-        actionRow(
-          "Delete plan",
-          "Delete this plan. Exercises and history are kept",
-          () =>
-            confirmDelete(`plan "${plan.name}"`, () => {
-              store.deletePlan(plan.id);
-              router.go("/plans");
-            }),
-          true,
-        ),
-      ]),
+      deleteButton(
+        "Delete plan",
+        "Delete this plan. Exercises and history are kept",
+        () =>
+          confirmDelete(`plan "${plan.name}"`, () => {
+            store.deletePlan(plan.id);
+            router.go("/plans");
+          }),
+      ),
     );
   }
 }

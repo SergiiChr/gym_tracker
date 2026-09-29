@@ -1,10 +1,10 @@
 import { newExercise } from "../../model/presets";
 import type { App } from "../App";
-import { confirmSheet } from "../components/actionSheet";
+import { confirmDialog } from "../components/popups";
 import { exercisePicker } from "../components/exercisePicker";
 import { textRow } from "../components/forms";
 import { makeSortable, moveItem, swipeToDelete } from "../components/gestures";
-import { confirmDelete, emptyState, page } from "../components/layout";
+import { confirmDelete, deleteButton, emptyState, page } from "../components/layout";
 import { actionRow, dragHandle, group, row } from "../components/list";
 import { schemeText } from "../format";
 import type { Screen } from "../Router";
@@ -39,9 +39,15 @@ export class DayEditScreen implements Screen {
         swipeToDelete(
           exerciseRow,
           () =>
-            confirmSheet(`Remove ${exercise.name} from this day? The exercise itself is kept.`, "Remove", () => {
-              day.exerciseIds.splice(index, 1);
-              this.app.commit();
+            confirmDialog({
+              title: `Remove ${exercise.name}?`,
+              message: "Only this day changes. The exercise itself is kept.",
+              action: "Remove",
+              destructive: true,
+              onConfirm: () => {
+                day.exerciseIds.splice(index, 1);
+                this.app.commit();
+              },
             }),
           "Remove",
         ),
@@ -59,19 +65,16 @@ export class DayEditScreen implements Screen {
       { back: planPath },
       group(null, [textRow("Name", day.name, (name) => ((day.name = name), this.app.commit()))]),
       exercises,
-      group(null, [
-        actionRow(
-          "Delete day",
-          "Delete this day from the plan",
-          () =>
-            confirmDelete(`day "${day.name}"`, () => {
-              plan.days = plan.days.filter((d) => d !== day);
-              store.save();
-              router.go(planPath);
-            }),
-          true,
-        ),
-      ]),
+      deleteButton(
+        "Delete day",
+        "Delete this day from the plan",
+        () =>
+          confirmDelete(`day "${day.name}"`, () => {
+            plan.days = plan.days.filter((d) => d !== day);
+            store.save();
+            router.go(planPath);
+          }),
+      ),
     );
   }
 
@@ -81,6 +84,8 @@ export class DayEditScreen implements Screen {
     if (!day) return;
     exercisePicker(
       store.data.exercises.filter((e) => !day.exerciseIds.includes(e.id)),
+      store.plan(this.planId)?.mode ?? "fixed",
+      store.data.settings.unit,
       (exercise) => {
         day.exerciseIds.push(exercise.id);
         this.app.commit();

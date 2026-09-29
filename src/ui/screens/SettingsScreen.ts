@@ -2,9 +2,9 @@ import { addPresets, emptyData } from "../../model/presets";
 import type { Unit } from "../../model/types";
 import { convertData, formatWeight, STEP_OPTIONS } from "../../model/units";
 import type { App } from "../App";
-import { confirmSheet } from "../components/actionSheet";
+import { confirmDialog } from "../components/popups";
 import { numberRow, segmentedRow, selectRow, toggleRow } from "../components/forms";
-import { page, toast } from "../components/layout";
+import { deleteButton, page, toast } from "../components/layout";
 import { actionRow, group, row } from "../components/list";
 import type { Screen } from "../Router";
 
@@ -31,9 +31,14 @@ export class SettingsScreen implements Screen {
             units,
             settings.unit,
             (unit) =>
-              confirmSheet(`Switch to ${unit}? All weights, including history, are converted and rounded.`, `Switch to ${unit}`, () => {
-                convertData(store.data, unit);
-                commit();
+              confirmDialog({
+                title: `Switch to ${unit}?`,
+                message: "All weights, including history, are converted and rounded.",
+                action: "Switch",
+                onConfirm: () => {
+                  convertData(store.data, unit);
+                  commit();
+                },
               }),
             "Weight unit for the whole app",
           ),
@@ -71,18 +76,20 @@ export class SettingsScreen implements Screen {
             save();
             toast("Presets added");
           }),
-          actionRow(
-            "Clear all data",
-            "Delete all plans, exercises, history and settings",
-            () =>
-              confirmSheet("Delete ALL plans, exercises, history and settings? This can't be undone.", "Clear all data", () => {
-                store.data = emptyData();
-                commit();
-              }),
-            true,
-          ),
         ],
         "Data is stored in this browser only. Export a backup before clearing browser data.",
+      ),
+      deleteButton("Clear all data", "Delete all plans, exercises, history and settings", () =>
+        confirmDialog({
+          title: "Clear all data?",
+          message: "Deletes all plans, exercises, history and settings. This can't be undone.",
+          action: "Clear",
+          destructive: true,
+          onConfirm: () => {
+            store.data = emptyData();
+            commit();
+          },
+        }),
       ),
     );
   }
