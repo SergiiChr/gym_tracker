@@ -39,9 +39,9 @@ export function row(options: RowOptions): HTMLLIElement {
   return h("li", { className: `row ${options.className ?? ""}`, title: options.tip ?? "" }, content);
 }
 
-/** Blue text row used for "Add …" actions at the end of a list. */
-export function actionRow(label: string, tip: string, onClick: () => void, destructive = false): HTMLLIElement {
-  return row({ title: label, tip, onClick, className: destructive ? "row-action destructive" : "row-action" });
+/** Blue row with a round icon, used for "Add …" and similar actions at the end of a list. */
+export function actionRow(label: string, tip: string, onClick: () => void, icon: string = ICONS.plus): HTMLLIElement {
+  return row({ title: label, tip, onClick, leading: h("span", { className: "action-icon" }, svg(icon)), className: "row-action" });
 }
 
 export function dragHandle(): HTMLElement {

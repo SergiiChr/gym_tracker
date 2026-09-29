@@ -1,9 +1,10 @@
 import { MINIMAL_BACKUP } from "../../model/backupExample";
 import type { App } from "../App";
-import { confirmSheet } from "../components/actionSheet";
+import { confirmDialog } from "../components/popups";
 import { page, toast } from "../components/layout";
 import { actionRow, group } from "../components/list";
 import { h } from "../dom";
+import { ICONS } from "../icons";
 import type { Screen } from "../Router";
 
 export class BackupScreen implements Screen {
@@ -17,8 +18,8 @@ export class BackupScreen implements Screen {
       group(
         null,
         [
-          actionRow("Export data", "Download all data as a JSON file", () => this.exportData()),
-          actionRow("Import data", "Replace all data with a JSON backup", () => this.importData()),
+          actionRow("Export data", "Download all data as a JSON file", () => this.exportData(), ICONS.download),
+          actionRow("Import data", "Replace all data with a JSON backup", () => this.importData(), ICONS.upload),
         ],
         "Data is stored in this browser only. Export a backup before clearing browser data or switching devices. On iPhone, add the app to the Home Screen: Safari may delete website data after 7 days without a visit.",
       ),
@@ -43,7 +44,7 @@ export class BackupScreen implements Screen {
               h("pre", { className: "code" }, MINIMAL_BACKUP),
             ),
           ),
-          actionRow("Copy example", "Copy the example to the clipboard", () => this.copyExample()),
+          actionRow("Copy example", "Copy the example to the clipboard", () => this.copyExample(), ICONS.copy),
         ],
       ),
     );
@@ -62,14 +63,20 @@ export class BackupScreen implements Screen {
       const file = input.files?.[0];
       if (!file) return;
       const json = await file.text();
-      confirmSheet("Replace all current data with this backup?", "Replace data", () => {
-        try {
-          this.app.store.importJson(json);
-          this.app.commit();
-          toast("Backup imported");
-        } catch {
-          toast("This file is not a gym tracker backup. Nothing was changed.");
-        }
+      confirmDialog({
+        title: "Replace all data?",
+        message: "Current plans, exercises, history and settings are replaced with this backup.",
+        action: "Replace",
+        destructive: true,
+        onConfirm: () => {
+          try {
+            this.app.store.importJson(json);
+            this.app.commit();
+            toast("Backup imported");
+          } catch {
+            toast("This file is not a gym tracker backup. Nothing was changed.");
+          }
+        },
       });
     });
     input.click();

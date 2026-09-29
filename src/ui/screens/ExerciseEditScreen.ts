@@ -4,7 +4,7 @@ import { effectiveRule } from "../../services/progression";
 import type { App } from "../App";
 import { numberRow, segmentedRow, selectRow, textRow, toggleRow } from "../components/forms";
 import { swipeToDelete } from "../components/gestures";
-import { confirmDelete, emptyState, page } from "../components/layout";
+import { confirmDelete, deleteButton, emptyState, page } from "../components/layout";
 import { actionRow, group } from "../components/list";
 import { stepper, weightInput } from "../components/stepper";
 import { h } from "../dom";
@@ -42,18 +42,15 @@ export class ExerciseEditScreen implements Screen {
       ]),
       ...this.setsGroups(exercise, settings),
       exercise.bodyweight ? null : this.incrementGroup(exercise, settings),
-      group(null, [
-        actionRow(
-          "Delete exercise",
-          "Delete this exercise and remove it from every plan day",
-          () =>
-            confirmDelete(`exercise "${exercise.name}" from all plans`, () => {
-              store.deleteExercise(exercise.id);
-              router.go(this.backPath);
-            }),
-          true,
-        ),
-      ]),
+      deleteButton(
+        "Delete exercise",
+        "Delete this exercise and remove it from every plan day",
+        () =>
+          confirmDelete(`exercise "${exercise.name}" from all plans`, () => {
+            store.deleteExercise(exercise.id);
+            router.go(this.backPath);
+          }),
+      ),
     );
   }
 

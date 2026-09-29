@@ -1,4 +1,4 @@
-/* iOS system look: grouped inset lists, system colors, light and dark mode. */
+/* Native app look: grouped inset lists, system colors, light and dark mode. */
 :root {
   color-scheme: light dark;
   --bg: #f2f2f7;
@@ -15,6 +15,11 @@
   --orange: #ff9500;
   --purple: #af52de;
   --gray: #8e8e93;
+  --blue-tint: rgba(0, 122, 255, 0.12);
+  --red-tint: rgba(255, 59, 48, 0.12);
+  /* Sheets and dialogs float above the page. */
+  --elevated: #ffffff;
+  --scrim: rgba(0, 0, 0, 0.35);
   --radius: 10px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 17px;
@@ -37,6 +42,10 @@
     --red: #ff453a;
     --orange: #ff9f0a;
     --purple: #bf5af2;
+    --blue-tint: rgba(10, 132, 255, 0.2);
+    --red-tint: rgba(255, 69, 58, 0.2);
+    --elevated: #1c1c1e;
+    --scrim: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -54,6 +63,10 @@ body {
   background: var(--bg);
   color: var(--text);
   -webkit-touch-callout: none;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 a {
@@ -158,9 +171,8 @@ button {
 }
 
 .group-header {
-  font-size: 13px;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--muted);
   margin: 0 16px 6px;
 }
@@ -271,8 +283,22 @@ button {
   color: var(--blue);
 }
 
-.row-action.destructive .row-title {
-  color: var(--red);
+/* Round tinted icon in front of "Add …" rows and sheet actions. */
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--blue-tint);
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.action-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
 }
 
 .star {
@@ -280,14 +306,17 @@ button {
   display: inline-flex;
 }
 
-.selectable .row-detail {
-  color: var(--blue);
-  font-weight: 600;
-  visibility: hidden;
+.radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--separator);
+  flex-shrink: 0;
+  transition: border-width 0.15s;
 }
 
-.selectable.selected .row-detail {
-  visibility: visible;
+.selectable.selected .radio {
+  border: 7px solid var(--blue);
 }
 
 /* Swipe to delete */
@@ -451,19 +480,16 @@ select.field-input {
 .stepper-button {
   display: grid;
   place-items: center;
-  width: 30px;
+  width: 34px;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--blue);
 }
 
-.stepper-button:first-child {
-  border-right: 1px solid var(--separator);
-}
-
-.stepper-button:last-child {
-  border-left: 1px solid var(--separator);
+.stepper-button svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
 }
 
 .stepper-button:active {
@@ -630,7 +656,7 @@ select.field-input {
 
 /* Weight per set rows run edge to edge inside the card. */
 .set-list {
-  margin: 0 -16px -14px;
+  margin: 0 -16px;
   border-radius: 0;
 }
 
@@ -755,22 +781,41 @@ select.field-input {
   color: #fff;
 }
 
-.set-actions {
+.card-actions {
   display: flex;
-  gap: 16px;
-  margin-top: 4px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.set-actions button {
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 14px 0 10px;
   border: 0;
-  padding: 4px 0;
-  background: none;
-  color: var(--blue);
+  border-radius: 17px;
+  background: var(--fill);
   font-size: 15px;
+  font-weight: 500;
 }
 
-.set-actions button.destructive {
+.chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chip:active {
+  opacity: 0.6;
+}
+
+.chip-danger {
   margin-left: auto;
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+  background: var(--red-tint);
   color: var(--red);
 }
 
@@ -815,9 +860,9 @@ select.field-input {
   height: 60px;
   border: 0;
   border-radius: 30px;
-  background: var(--red);
+  background: var(--blue);
   color: #fff;
-  box-shadow: 0 6px 16px rgba(255, 59, 48, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   transition: transform 0.1s;
 }
 
@@ -825,10 +870,55 @@ select.field-input {
   transform: scale(0.94);
 }
 
-.fab-wide {
-  width: auto;
-  padding: 0 24px 0 20px;
+/* Buttons: filled for the main action, tonal for the rest, red only when data is lost. */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
   font-weight: 600;
+  transition: transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn.filled {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn.danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn.tonal {
+  background: var(--fill);
+}
+
+.btn.tonal-danger {
+  background: var(--red-tint);
+  color: var(--red);
+}
+
+.page-button {
+  width: 100%;
+  margin: 28px 0 20px;
+}
+
+.bottom-button {
+  position: fixed;
+  left: max(16px, calc(50vw - 304px));
+  right: max(16px, calc(50vw - 304px));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 20;
+  min-height: 52px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .rest-timer {
@@ -875,55 +965,207 @@ select.field-input {
   100% { opacity: 0; }
 }
 
-/* Action sheet */
-.sheet {
-  width: min(100% - 16px, 520px);
-  max-height: 80vh;
-  margin: auto auto calc(8px + env(safe-area-inset-bottom));
-  padding: 0;
+/* Bottom sheet and centered dialog, both native <dialog> elements. */
+.sheet,
+.alert {
   border: 0;
-  background: none;
-  overflow: visible;
+  background: var(--elevated);
+  color: var(--text);
 }
 
-.sheet::backdrop {
-  background: rgba(0, 0, 0, 0.35);
+.sheet::backdrop,
+.alert::backdrop {
+  background: var(--scrim);
 }
 
-.sheet-group {
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  transition: transform 0.2s ease;
+}
+
+.sheet[open] {
   display: flex;
   flex-direction: column;
-  max-height: calc(80vh - 80px);
-  overflow-y: auto;
-  margin-bottom: 8px;
-  border-radius: 14px;
-  background: var(--cell);
+  gap: 8px;
+  animation: sheet-in 0.25s ease-out;
+}
+
+.sheet.tall {
+  height: 90vh;
+  height: 90dvh;
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+}
+
+/* Grabber on top; the whole header is the drag area. */
+.sheet-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 4px;
+  touch-action: none;
+}
+
+.sheet-head::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 36px;
+  height: 5px;
+  margin-left: -18px;
+  border-radius: 3px;
+  background: var(--separator);
 }
 
 .sheet-title {
-  padding: 14px;
-  text-align: center;
-  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-title h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.sheet-title p {
+  margin: 2px 0 0;
+  font-size: 14px;
   color: var(--muted);
 }
 
-.sheet-group button {
-  flex-shrink: 0;
+.sheet-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   border: 0;
-  border-top: 0.5px solid var(--separator);
-  padding: 16px;
-  background: none;
-  color: var(--blue);
-  font-size: 19px;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--muted);
 }
 
-.sheet-group button.destructive {
+.sheet-close svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.6;
+}
+
+.sheet-items {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+/* Any visible item before it, so items hidden by a search don't leave a line on the first shown one. */
+.sheet-item:not([hidden]) ~ .sheet-item {
+  border-top: 0.5px solid var(--separator);
+}
+
+.sheet-item:active {
+  opacity: 0.6;
+}
+
+.sheet-item > svg {
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.sheet-item.destructive,
+.sheet-item.destructive > svg {
   color: var(--red);
 }
 
-.sheet-group .sheet-cancel {
-  border-top: 0;
-  font-weight: 600;
+.sheet-item.accent {
+  color: var(--blue);
+}
+
+.sheet-item-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-item-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.sheet-item-check {
+  display: inline-flex;
+  color: var(--blue);
+}
+
+.alert {
+  width: min(100% - 48px, 340px);
+  padding: 20px 18px 16px;
+  border-radius: 20px;
+}
+
+.alert[open] {
+  animation: alert-in 0.2s ease-out;
+}
+
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.alert h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.alert p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.alert-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open],
+  .alert[open] {
+    animation: none;
+  }
 }
 
 /* Search */
@@ -938,8 +1180,7 @@ select.field-input {
   outline: none;
 }
 
-.sheet-group .search {
-  width: auto;
-  margin: 0 12px 12px;
+.sheet .search {
+  margin: 4px 0;
   flex-shrink: 0;
 }

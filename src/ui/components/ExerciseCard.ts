@@ -1,12 +1,12 @@
 import type { LoggedExercise, LoggedSet, PlanMode, Unit } from "../../model/types";
 import { formatWeight } from "../../model/units";
 import { addSet, cycleReps, isComplete } from "../../services/workout";
-import { h, svg } from "../dom";
+import { h, svg, type Child } from "../dom";
 import { ICONS } from "../icons";
 import { makeSortable, moveItem, swipeToDelete } from "./gestures";
 import { confirmDelete } from "./layout";
 import { numberInput } from "./forms";
-import { actionRow, dragHandle } from "./list";
+import { dragHandle } from "./list";
 import { weightInput } from "./stepper";
 
 export interface CardHost {
@@ -115,16 +115,11 @@ export class ExerciseCard {
             host.save();
           }),
         );
-    const actions = h(
-      "div",
-      { className: "set-actions" },
-      h("button", { type: "button", title: "Add a set to this workout", onclick: () => this.addSet() }, "+ Set"),
+    const removeLast =
       logged.sets.length > 0
-        ? h("button", { type: "button", title: "Remove the last set from this workout", onclick: () => this.removeSet(logged.sets.length - 1) }, "− Set")
-        : null,
-      h("button", { type: "button", className: "destructive", title: "Remove this exercise from this workout", onclick: () => this.remove() }, "Remove exercise"),
-    );
-    return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), actions);
+        ? h("button", { type: "button", className: "chip", title: "Remove the last set from this workout", onclick: () => this.removeSet(logged.sets.length - 1) }, svg(ICONS.minus), "Set")
+        : null;
+    return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), this.actions(removeLast));
   }
 
   /** Weight per set style: a table of sets with last time's result, plain number cells and a done checkbox. */
@@ -187,15 +182,28 @@ export class ExerciseCard {
       paint();
       return swipeToDelete(li, () => this.removeSet(i));
     });
-    const add = actionRow("Add set", "Add a set to this workout only", () => this.addSet());
-    const remove = actionRow("Remove exercise", "Remove this exercise from this workout", () => this.remove(), true);
-    const list = h("ul", { className: "list set-list" }, head, ...rows, add, remove);
+    const list = h("ul", { className: "list set-list" }, head, ...rows);
     makeSortable(list, (from, to) => {
       moveItem(logged.sets, from, to);
       host.save();
       this.refresh();
     });
-    return h("div", { className: "card-body" }, list);
+    return h("div", { className: "card-body" }, list, this.actions());
+  }
+
+  /** Add set, optional extra buttons and remove exercise, in one row at the bottom of the card. */
+  private actions(...extra: Child[]): HTMLElement {
+    return h(
+      "div",
+      { className: "card-actions" },
+      h("button", { type: "button", className: "chip", title: "Add a set to this workout", onclick: () => this.addSet() }, svg(ICONS.plus), "Set"),
+      ...extra,
+      h(
+        "button",
+        { type: "button", className: "chip chip-danger", title: "Remove this exercise from this workout", ariaLabel: "Remove exercise", onclick: () => this.remove() },
+        svg(ICONS.trash),
+      ),
+    );
   }
 
   private addSet(): void {
