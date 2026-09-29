@@ -6,7 +6,7 @@ import { ICONS } from "../icons";
 import { makeSortable, moveItem, swipeToDelete } from "./gestures";
 import { confirmDelete } from "./layout";
 import { numberInput } from "./forms";
-import { actionRow } from "./list";
+import { actionRow, dragHandle } from "./list";
 import { weightInput } from "./stepper";
 
 export interface CardHost {
@@ -15,6 +15,8 @@ export interface CardHost {
   step: number;
   previous(logged: LoggedExercise, set: LoggedSet): LoggedSet | undefined;
   onSetDone(logged: LoggedExercise): void;
+  /** Drops the exercise from the workout data; the card removes its own element. */
+  remove(logged: LoggedExercise): void;
   save(): void;
 }
 
@@ -39,6 +41,7 @@ export class ExerciseCard {
       h(
         "summary",
         { title: "Tap to collapse or expand" },
+        dragHandle(),
         h("span", { className: "card-title" }, logged.name),
         this.detail,
         h("span", { className: "card-check", title: "All sets done" }, svg(ICONS.check)),
@@ -119,6 +122,7 @@ export class ExerciseCard {
       logged.sets.length > 0
         ? h("button", { type: "button", title: "Remove the last set from this workout", onclick: () => this.removeSet(logged.sets.length - 1) }, "− Set")
         : null,
+      h("button", { type: "button", className: "destructive", title: "Remove this exercise from this workout", onclick: () => this.remove() }, "Remove exercise"),
     );
     return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), actions);
   }
@@ -184,7 +188,8 @@ export class ExerciseCard {
       return swipeToDelete(li, () => this.removeSet(i));
     });
     const add = actionRow("Add set", "Add a set to this workout only", () => this.addSet());
-    const list = h("ul", { className: "list set-list" }, head, ...rows, add);
+    const remove = actionRow("Remove exercise", "Remove this exercise from this workout", () => this.remove(), true);
+    const list = h("ul", { className: "list set-list" }, head, ...rows, add, remove);
     makeSortable(list, (from, to) => {
       moveItem(logged.sets, from, to);
       host.save();
@@ -204,6 +209,13 @@ export class ExerciseCard {
       this.logged.sets.splice(index, 1);
       this.host.save();
       this.refresh();
+    });
+  }
+
+  private remove(): void {
+    confirmDelete(`${this.logged.name} from this workout`, () => {
+      this.host.remove(this.logged);
+      this.element.remove();
     });
   }
 

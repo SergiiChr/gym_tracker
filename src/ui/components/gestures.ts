@@ -69,18 +69,19 @@ export function swipeToDelete(row: HTMLLIElement, onDelete: () => void, label = 
 }
 
 /**
- * Drag rows by their `.drag-handle` to reorder; reports the move as indexes among the rows that have a handle.
- * Rows without a handle (like a trailing "Add" row) stay in place.
+ * Drag rows (or workout cards) by their `.drag-handle` to reorder; reports the move as indexes among the items that have a handle.
+ * Items without a handle (like a trailing "Add" row) stay in place.
  */
 export function makeSortable(list: HTMLElement, onMove: (from: number, to: number) => void): void {
-  // The handle sits inside the row link; grabbing it must not open the row.
+  // The handle sits inside the row link or card summary; grabbing it must not open the row or toggle the card.
   list.addEventListener("click", (e) => (e.target as Element).closest(".drag-handle") && e.preventDefault(), true);
   list.addEventListener("pointerdown", (e) => {
     const handle = (e.target as Element).closest(".drag-handle");
-    const item = handle?.closest<HTMLElement>("li");
-    if (!handle || !item) return;
+    const item = handle?.closest<HTMLElement>("li, details");
+    // Handles of a list nested inside an item belong to that inner list.
+    if (!handle || !item || item.parentElement !== list) return;
     e.preventDefault();
-    const items = (): HTMLElement[] => [...list.querySelectorAll<HTMLElement>(":scope > li:has(.drag-handle)")];
+    const items = (): HTMLElement[] => [...list.querySelectorAll<HTMLElement>(":scope > :has(.drag-handle)")];
     const from = items().indexOf(item);
     let startY = e.clientY;
     item.classList.add("dragging");

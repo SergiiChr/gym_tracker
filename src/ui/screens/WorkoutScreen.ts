@@ -1,9 +1,13 @@
-import type { LoggedExercise, WorkoutLog } from "../../model/types";
-import { durationMinutes, finishWorkout, hasUnfinishedSets, previousSet } from "../../services/workout";
+import { newExercise } from "../../model/presets";
+import type { Exercise, LoggedExercise, PlanDay, WorkoutLog } from "../../model/types";
+import { applyOrderToDay, durationMinutes, finishWorkout, hasUnfinishedSets, logExercise, previousSet } from "../../services/workout";
 import type { App } from "../App";
 import { actionSheet, confirmSheet } from "../components/actionSheet";
 import { ExerciseCard, type CardHost } from "../components/ExerciseCard";
+import { exercisePicker } from "../components/exercisePicker";
+import { makeSortable, moveItem } from "../components/gestures";
 import { emptyState, fab, page } from "../components/layout";
+import { actionRow, group } from "../components/list";
 import { RestTimer } from "../components/RestTimer";
 import { h } from "../dom";
 import { ICONS } from "../icons";
@@ -17,6 +21,7 @@ const HIGHLIGHT_MS = 1600;
 export class WorkoutScreen implements Screen {
   private readonly timer = new RestTimer(() => this.showNextSet());
   private readonly root = h("div");
+  private readonly cards = h("div");
   private clock: number | undefined;
 
   constructor(private readonly app: App) {}
@@ -37,11 +42,21 @@ export class WorkoutScreen implements Screen {
       step: store.data.settings.increment.step,
       previous: (logged, set) => previousSet(store.data, logged.exerciseId, workout.mode, set.planIndex),
       onSetDone: (logged) => this.startRest(logged),
+      remove: (logged) => {
+        workout.exercises = workout.exercises.filter((e) => e !== logged);
+        store.save();
+      },
       save: () => store.save(),
     };
-    const cards = workout.exercises.map((ex) => new ExerciseCard(ex, host).element);
+    this.cards.append(...workout.exercises.map((ex) => new ExerciseCard(ex, host).element));
+    makeSortable(this.cards, (from, to) => {
+      moveItem(workout.exercises, from, to);
+      store.save();
+      this.askToSavePlan(workout, "Exercise order changed.", "Save order to plan", (day) => applyOrderToDay(workout, day));
+    });
+    const add = actionRow("Add exercise", "Add an existing or new exercise", () => this.pickExercise(workout, host));
     this.root.append(
-      page(workout.dayName, { back: "/", action: elapsed }, h("p", { className: "page-note" }, workout.planName), ...cards),
+      page(workout.dayName, { back: "/", action: elapsed }, h("p", { className: "page-note" }, workout.planName), this.cards, group(null, [add])),
       this.timer.element,
       fab(ICONS.flag, "Finish or discard the workout", () => this.finishSheet(workout)),
     );
@@ -51,6 +66,50 @@ export class WorkoutScreen implements Screen {
   dispose(): void {
     window.clearInterval(this.clock);
     this.timer.stop();
+  }
+
+  /** Anything not in the workout can be added, including exercises dropped from it earlier. */
+  private pickExercise(workout: WorkoutLog, host: CardHost): void {
+    const { store } = this.app;
+    const inWorkout = new Set(workout.exercises.map((e) => e.exerciseId));
+    const add = (exercise: Exercise): void => {
+      const logged = logExercise(exercise, workout.mode);
+      workout.exercises.push(logged);
+      store.save();
+      const card = new ExerciseCard(logged, host).element;
+      this.cards.append(card);
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      this.askToSavePlan(workout, `${exercise.name} added to this workout.`, "Add to plan too", (day) => {
+        if (!day.exerciseIds.includes(exercise.id)) day.exerciseIds.push(exercise.id);
+      });
+    };
+    exercisePicker(
+      store.data.exercises.filter((e) => !inWorkout.has(e.id)),
+      add,
+      (name) => {
+        // A brand new exercise always goes to the exercise list, whatever is chosen for the plan.
+        const exercise = newExercise(store.data.settings, name);
+        store.data.exercises.push(exercise);
+        add(exercise);
+      },
+    );
+  }
+
+  /** Changes already apply to this workout; offers to copy them to the plan day the workout came from. */
+  private askToSavePlan(workout: WorkoutLog, message: string, planLabel: string, update: (day: PlanDay) => void): void {
+    const { store } = this.app;
+    const day = store.plan(workout.planId)?.days.find((d) => d.id === workout.dayId);
+    if (!day) return;
+    actionSheet(message, [
+      { label: "This workout only", onSelect: () => {} },
+      {
+        label: planLabel,
+        onSelect: () => {
+          update(day);
+          store.save();
+        },
+      },
+    ]);
   }
 
   private startRest(logged: LoggedExercise): void {

@@ -1,5 +1,7 @@
 import { newExercise } from "../../model/presets";
+import { fuzzyMatch } from "../../services/search";
 import type { App } from "../App";
+import { searchInput } from "../components/forms";
 import { swipeToDelete } from "../components/gestures";
 import { confirmDelete, emptyState, page, plusButton } from "../components/layout";
 import { group, row } from "../components/list";
@@ -29,6 +31,9 @@ export class ExercisesScreen implements Screen {
       store.save();
       this.app.router.go(`/exercises/${exercise.id}`);
     });
-    return page("Exercises", { back: "/", action: add }, rows.length ? group(null, rows) : emptyState("No exercises yet. Tap + to add one."));
+    if (!rows.length) return page("Exercises", { back: "/", action: add }, emptyState("No exercises yet. Tap + to add one."));
+    // Rows are hidden rather than re-rendered, so the search field keeps focus while typing.
+    const search = searchInput("Search exercises", (query) => rows.forEach((r, i) => (r.hidden = !fuzzyMatch(query, sorted[i]!.name))));
+    return page("Exercises", { back: "/", action: add }, search, group(null, rows));
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addSet, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet } from "../src/services/workout";
+import { addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet } from "../src/services/workout";
 import { sampleData } from "./helpers";
 
 describe("workout", () => {
@@ -88,5 +88,15 @@ describe("workout", () => {
     expect(isComplete(logged)).toBe(false);
     logged.sets[0]!.done = true;
     expect(isComplete(logged)).toBe(true);
+  });
+
+  it("applies the workout order to the plan day, keeping slots of exercises not in the workout", () => {
+    const { data, plan, squat, bench } = sampleData();
+    const day = plan.days[0]!;
+    day.exerciseIds.splice(1, 0, "other");
+    const workout = createWorkout(data, plan, day);
+    workout.exercises.reverse();
+    applyOrderToDay(workout, day);
+    expect(day.exerciseIds).toEqual([bench.id, "other", squat.id]);
   });
 });
