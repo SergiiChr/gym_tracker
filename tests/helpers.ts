@@ -11,8 +11,8 @@ export function sampleData(): { data: AppData; squat: Exercise; bench: Exercise;
     name: "Plan",
     mode: "fixed",
     days: [
-      { id: "a", name: "A", exerciseIds: [squat.id, bench.id] },
-      { id: "b", name: "B", exerciseIds: [squat.id] },
+      { id: "a", name: "A", slots: [[squat.id], [bench.id]] },
+      { id: "b", name: "B", slots: [[squat.id]] },
     ],
   };
   data.exercises.push(squat, bench);

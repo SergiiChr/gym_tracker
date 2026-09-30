@@ -10,6 +10,11 @@ export type PlanMode = "fixed" | "perSet";
 export interface SetSpec {
   reps: number;
   weight: number;
+  /**
+   * Top of the rep range under double progression; `reps` is then the bottom.
+   * The weight goes up only once every set reaches it.
+   */
+  maxReps?: number;
 }
 
 export interface IncrementRule {
@@ -38,7 +43,11 @@ export interface Exercise {
 export interface PlanDay {
   id: string;
   name: string;
-  exerciseIds: string[];
+  /**
+   * Exercise ids in order; each slot is one exercise, or several for an exercise group.
+   * A group acts as one exercise in a workout: only one of them is done and it can be swapped for another.
+   */
+  slots: string[][];
 }
 
 export interface Plan {
@@ -59,6 +68,8 @@ export interface LoggedSet {
    * Lets sets be reordered, removed or added mid-workout without touching the saved plan.
    */
   planIndex: number | null;
+  /** Bottom of the rep range under double progression; `targetReps` is then the top. */
+  minReps?: number;
 }
 
 export interface LoggedExercise {
@@ -66,6 +77,8 @@ export interface LoggedExercise {
   name: string;
   bodyweight: boolean;
   sets: LoggedSet[];
+  /** Exercise ids of the group this one was picked from; the workout can swap to any of them. */
+  group?: string[];
 }
 
 /** Names are copied so history stays readable after plans or exercises are renamed or deleted. */

@@ -1,6 +1,6 @@
 /** Smallest backup that imports cleanly; shown on the Backup screen and covered by a test. */
 export const MINIMAL_BACKUP = `{
-  "version": 3,
+  "version": 4,
   "exercises": [{
     "id": "squat",
     "name": "Squat",
@@ -17,7 +17,7 @@ export const MINIMAL_BACKUP = `{
     "days": [{
       "id": "dayA",
       "name": "Day A",
-      "exerciseIds": ["squat"]
+      "slots": [["squat"]]
     }]
   }]
 }`;

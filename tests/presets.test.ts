@@ -10,8 +10,8 @@ describe("presets", () => {
     const [chest, , shoulders] = plan.days;
     const sitUp = data.exercises.filter((e) => e.name === "Sit Up");
     expect(sitUp).toHaveLength(1);
-    expect(chest?.exerciseIds).toContain(sitUp[0]?.id);
-    expect(shoulders?.exerciseIds).toContain(sitUp[0]?.id);
+    expect(chest?.slots).toContainEqual([sitUp[0]?.id]);
+    expect(shoulders?.slots).toContainEqual([sitUp[0]?.id]);
     expect(sitUp[0]?.bodyweight).toBe(true);
   });
 
@@ -57,5 +57,28 @@ describe("presets", () => {
     addPresets(data);
     expect(blank.schemes.perSet.at(-1)?.weight).toBe(85);
     expect(used.schemes.perSet).toEqual([{ reps: 8, weight: 100 }]);
+  });
+
+  it("builds Full body A/B/C with double progression and exercise groups", () => {
+    const data = presetData();
+    const plan = data.plans.find((p) => p.name === "Full body A/B/C")!;
+    const name = (id: string): string | undefined => data.exercises.find((e) => e.id === id)?.name;
+    expect(plan.mode).toBe("fixed");
+    expect(plan.days.map((d) => d.slots.length)).toEqual([7, 8, 9]);
+    expect(plan.days[2]?.slots[0]?.map(name)).toEqual(["Hack Squat", "Leg Press"]);
+    expect(plan.days[2]?.slots[2]?.map(name)).toEqual(["Weighted Pull-up", "Lat Pulldown"]);
+    // Shared with My preset: keeps its weights there and gets the range for Same weight at its heaviest weight.
+    const press = data.exercises.find((e) => e.name === "Incline Dumbbell Press")!;
+    expect(press.schemes.fixed).toEqual(Array.from({ length: 3 }, () => ({ reps: 6, maxReps: 10, weight: 30 })));
+    expect(press.schemes.perSet.at(-1)).toEqual({ reps: 8, weight: 30 });
+    expect(data.exercises.filter((e) => e.name === "Hack Squat")).toHaveLength(1);
+  });
+
+  it("renames old exercise names when presets are added", () => {
+    const data = emptyData();
+    data.exercises.push({ ...newExercise(data.settings), name: "Weighted Pull Ups" });
+    addPresets(data);
+    expect(data.exercises.filter((e) => e.name.startsWith("Weighted Pull"))).toHaveLength(1);
+    expect(data.exercises[0]?.name).toBe("Weighted Pull-up");
   });
 });

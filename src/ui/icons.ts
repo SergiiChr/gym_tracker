@@ -8,6 +8,7 @@ export const ICONS = {
     '<path d="M5 21V4"/><rect x="5" y="4" width="14" height="9" stroke-width="1.5"/><path fill="currentColor" stroke="none" d="M5 4h3.5v3H5zM12 4h3.5v3H12zM8.5 7H12v3H8.5zM15.5 7H19v3h-3.5zM5 10h3.5v3H5zM12 10h3.5v3H12z"/>',
   ),
   plus: icon('<path d="M12 5v14M5 12h14"/>'),
+  swap: icon('<path d="M20 11a8 8 0 0 0-14.9-3.5"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3.5"/><path d="M20 20v-4h-4"/>'),
   minus: icon('<path d="M5 12h14"/>'),
   close: icon('<path d="M6 6l12 12M18 6L6 18"/>'),
   trash: icon('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'),

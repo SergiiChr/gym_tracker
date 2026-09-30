@@ -6,9 +6,14 @@ export const MODE_LABELS: Record<PlanMode, string> = {
   perSet: "Weight per set",
 };
 
-/** Compact scheme like "5×5 · 60 kg" or "2 sets · 12/8 · 40–60 kg". */
+/** Reps like "5", or "6–10" for a double progression range. */
+export function repsText(min: number, max?: number): string {
+  return max === undefined ? String(min) : `${min}–${max}`;
+}
+
+/** Compact scheme like "5×5 · 60 kg", "3×6–10 · 30 kg" or "2 sets · 12/8 · 40–60 kg". */
 export function schemeText(sets: SetSpec[], bodyweight: boolean, unit: Unit): string {
-  const reps = sets.map((s) => s.reps);
+  const reps = sets.map((s) => repsText(s.reps, s.maxReps));
   const weights = sets.map((s) => s.weight);
   const sameReps = reps.every((r) => r === reps[0]);
   const scheme = sameReps ? `${reps.length}×${reps[0] ?? 0}` : `${reps.length} sets · ${reps.join("/")}`;

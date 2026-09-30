@@ -1,4 +1,4 @@
-import type { AppData, Exercise, IncrementRule, LoggedExercise, Plan, PlanDay, PlanMode, Settings } from "../model/types";
+import type { AppData, Exercise, IncrementRule, LoggedExercise, Plan, PlanDay, PlanMode, SetSpec, Settings } from "../model/types";
 
 export function effectiveRule(exercise: Exercise, settings: Settings): IncrementRule {
   return exercise.increment ?? settings.increment;
@@ -11,14 +11,27 @@ export function nextDay(plan: Plan, data: AppData): PlanDay | undefined {
   return plan.days[(index + 1) % plan.days.length];
 }
 
+/** Sets have rep ranges, and the weight goes up once every set reaches the top of its range. */
+export function isDoubleProgression(sets: SetSpec[]): boolean {
+  return sets.some((s) => s.maxReps !== undefined);
+}
+
+/** Positions of the planned sets that are checked and get the increment; double progression always uses all of them. */
+function checkedSets(exercise: Exercise, scheme: SetSpec[]): number[] {
+  const all = [...scheme.keys()];
+  return exercise.incrementLastSetOnly && !isDoubleProgression(scheme) ? all.slice(-1) : all;
+}
+
 /**
  * Whether a finished exercise earned a weight increase for next time.
- * Checks the planned sets (or only the last one), so a planned set removed or left undone blocks the increase.
+ * Checks the planned sets, so a planned set removed or left undone blocks the increase.
  */
-export function earnedIncrement(logged: LoggedExercise, exercise: Exercise, rule: IncrementRule, plannedSets: number): boolean {
-  if (!rule.enabled || exercise.bodyweight || plannedSets === 0) return false;
-  const indexes = exercise.incrementLastSetOnly ? [plannedSets - 1] : [...Array(plannedSets).keys()];
-  return indexes.every((i) => logged.sets.some((s) => s.planIndex === i && s.done && s.reps >= rule.targetReps));
+export function earnedIncrement(logged: LoggedExercise, exercise: Exercise, rule: IncrementRule, scheme: SetSpec[]): boolean {
+  if (!rule.enabled || exercise.bodyweight || scheme.length === 0) return false;
+  return checkedSets(exercise, scheme).every((i) => {
+    const target = scheme[i]!.maxReps ?? rule.targetReps;
+    return logged.sets.some((s) => s.planIndex === i && s.done && s.reps >= target);
+  });
 }
 
 /**
@@ -32,7 +45,6 @@ export function applyResult(logged: LoggedExercise, exercise: Exercise, mode: Pl
     if (spec) spec.weight = set.weight;
   }
   const rule = effectiveRule(exercise, settings);
-  if (!earnedIncrement(logged, exercise, rule, scheme.length)) return;
-  const targets = exercise.incrementLastSetOnly ? scheme.slice(-1) : scheme;
-  for (const spec of targets) spec.weight += rule.step;
+  if (!earnedIncrement(logged, exercise, rule, scheme)) return;
+  for (const i of checkedSets(exercise, scheme)) scheme[i]!.weight += rule.step;
 }

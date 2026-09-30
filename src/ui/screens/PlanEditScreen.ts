@@ -24,7 +24,7 @@ export class PlanEditScreen implements Screen {
       swipeToDelete(
         row({
           title: day.name,
-          subtitle: `${day.exerciseIds.length} exercises`,
+          subtitle: `${day.slots.length} exercises`,
           leading: dragHandle(),
           href: `/plans/${plan.id}/days/${day.id}`,
           tip: "Edit day. Drag the handle to reorder, swipe left to delete",
@@ -37,7 +37,7 @@ export class PlanEditScreen implements Screen {
       ),
     );
     const addDay = actionRow("Add day", "Add a workout day to this plan", () => {
-      const day = { id: newId(), name: `Day ${plan.days.length + 1}`, exerciseIds: [] };
+      const day = { id: newId(), name: `Day ${plan.days.length + 1}`, slots: [] };
       plan.days.push(day);
       store.save();
       router.go(`/plans/${plan.id}/days/${day.id}`);

@@ -9,7 +9,7 @@ describe("Store", () => {
   it("starts with presets and persists changes", () => {
     const storage = new MemoryStorage();
     const store = new Store(storage);
-    expect(store.data.plans.map((p) => p.name)).toEqual(["My preset", "5×5 A/B", "HIT 4-day split"]);
+    expect(store.data.plans.map((p) => p.name)).toEqual(["My preset", "5×5 A/B", "HIT 4-day split", "Full body A/B/C"]);
     store.data.settings.defaultReps = 8;
     store.save();
     expect(new Store(storage).data.settings.defaultReps).toBe(8);
@@ -19,8 +19,18 @@ describe("Store", () => {
     const store = new Store(new MemoryStorage());
     const squat = store.data.exercises.find((e) => e.name === "Squat")!;
     store.deleteExercise(squat.id);
-    const ids = store.data.plans.flatMap((p) => p.days.flatMap((d) => d.exerciseIds));
+    const ids = store.data.plans.flatMap((p) => p.days.flatMap((d) => d.slots.flat()));
     expect(ids).not.toContain(squat.id);
+  });
+
+  it("removes a deleted exercise from its group and drops emptied slots", () => {
+    const store = new Store(new MemoryStorage());
+    const day = store.data.plans.find((p) => p.name === "Full body A/B/C")!.days[2]!;
+    const [hackSquat, legPress] = day.slots[0]!;
+    store.deleteExercise(hackSquat!);
+    expect(day.slots[0]).toEqual([legPress]);
+    store.deleteExercise(legPress!);
+    expect(day.slots).toHaveLength(8);
   });
 
   it("moves the default to another plan when the default is deleted", () => {
@@ -35,10 +45,10 @@ describe("Store", () => {
     const count = store.data.exercises.length;
     addPresets(store.data);
     expect(store.data.exercises.length).toBe(count);
-    expect(store.data.plans.length).toBe(3);
+    expect(store.data.plans.length).toBe(4);
     const squatIds = new Set(store.data.exercises.filter((e) => e.name === "Squat").map((e) => e.id));
     expect(squatIds.size).toBe(1);
-    expect(store.data.plans[1]?.days[0]?.exerciseIds).toContain([...squatIds][0]);
+    expect(store.data.plans[1]?.days[0]?.slots).toContainEqual([[...squatIds][0]]);
   });
 
   it("upgrades version 1 data to per-mode schemes", () => {
@@ -52,7 +62,7 @@ describe("Store", () => {
     storage.setItem("gym-tracker", JSON.stringify(v1));
     const store = new Store(storage);
     const squat = store.data.exercises.find((e) => e.name === "Squat")!;
-    expect(store.data.version).toBe(3);
+    expect(store.data.version).toBe(4);
     expect(squat.schemes.fixed).toEqual(squat.schemes.perSet);
     expect(squat.schemes.fixed).not.toBe(squat.schemes.perSet);
     expect("sets" in squat).toBe(false);
@@ -87,6 +97,14 @@ describe("Store", () => {
     ]);
   });
 
+  it("upgrades version 3 day exercise lists to slots", () => {
+    const storage = new MemoryStorage();
+    const v3 = { version: 3, exercises: [], plans: [{ id: "p", name: "P", mode: "fixed", days: [{ id: "d", name: "D", exerciseIds: ["a", "b"] }] }] };
+    storage.setItem("gym-tracker", JSON.stringify(v3));
+    const day = new Store(storage).data.plans[0]?.days[0];
+    expect(day).toEqual({ id: "d", name: "D", slots: [["a"], ["b"]] });
+  });
+
   it("round-trips export and rejects foreign JSON", () => {
     const store = new Store(new MemoryStorage());
     const json = store.exportJson();
@@ -109,7 +127,7 @@ describe("helpers", () => {
     const squat = data.exercises.find((e) => e.name === "Squat")!;
     const legPress = data.exercises.find((e) => e.name === "Leg Press")!;
     expect(exerciseSummary(squat, "kg")).toBe("5×5 · 20 kg");
-    expect(exerciseSummary(legPress, "kg")).toBe("2 sets · 16/12 · 0 kg");
+    expect(exerciseSummary(legPress, "kg")).toBe("3×10–15 · 0 kg | 2 sets · 16/12 · 0 kg");
     squat.schemes.perSet = [{ reps: 10, weight: 40 }];
     expect(exerciseSummary(squat, "kg")).toBe("5×5 · 20 kg | 1×10 · 40 kg");
   });

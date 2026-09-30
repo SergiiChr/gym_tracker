@@ -29,7 +29,7 @@ export class StartScreen implements Screen {
       rows.forEach((r, i) => r.classList.toggle("selected", plan.days[i]!.id === dayId));
     };
     const rows = plan.days.map((day) => {
-      const names = day.exerciseIds.map((id) => store.exercise(id)?.name).filter(Boolean);
+      const names = day.slots.map((slot) => slot.flatMap((id) => store.exercise(id)?.name ?? []).join(" / ")).filter(Boolean);
       return row({
         title: day.name,
         subtitle: names.join(", ") || "No exercises",
