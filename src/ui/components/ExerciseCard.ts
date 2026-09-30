@@ -42,6 +42,7 @@ export class ExerciseCard {
   private readonly title = h("span", { className: "card-title" });
   private readonly detail = h("span", { className: "card-detail" });
   private readonly head = h("span", { className: "card-head" }, this.title, this.detail);
+  private readonly summary: HTMLElement;
   private body: HTMLElement = h("div");
 
   constructor(
@@ -65,23 +66,22 @@ export class ExerciseCard {
             svg(ICONS.swap),
           )
         : null;
-    this.element = h(
-      "details",
-      { className: "card", open: !isComplete(logged) },
-      h("summary", { title: "Tap to collapse or expand" }, dragHandle(), this.head, swap, h("span", { className: "card-check", title: "All sets done" }, svg(ICONS.check))),
-      this.body,
-    );
+    this.summary = h("summary", { title: "Tap to collapse or expand" }, dragHandle(), this.head, swap, h("span", { className: "card-check", title: "All sets done" }, svg(ICONS.check)));
+    this.element = h("details", { className: "card", open: !isComplete(logged) }, this.summary, this.body);
     this.refresh();
   }
 
   /** Rebuilds the body, e.g. after sets were added, removed or moved. */
-  private refresh(): void {
+  private refresh(body = this.buildBody()): void {
     this.title.textContent = this.logged.name;
-    const body = this.host.mode === "fixed" ? this.fixedBody() : this.perSetBody();
     this.body.replaceWith(body);
     this.body = body;
     this.updateDetail();
     this.element.classList.toggle("complete", isComplete(this.logged));
+  }
+
+  private buildBody(): HTMLElement {
+    return this.host.mode === "fixed" ? this.fixedBody() : this.perSetBody();
   }
 
   private updateDetail(): void {
@@ -284,21 +284,38 @@ export class ExerciseCard {
     });
   }
 
-  /** Folds the sets away, rolls the title over to the next exercise, then opens its sets. */
+  /**
+   * Folds the sets away, rolls the title over to the next exercise, then opens its sets.
+   * The next sets are built before anything moves, so no frame mid-animation waits on that work.
+   */
   private async swapTo(exercise: Exercise): Promise<void> {
     this.element.classList.add("swapping");
-    const next = this.host.swap(this.logged, exercise);
-    if (this.element.open) {
-      await play(this.body, [{ height: `${this.body.offsetHeight}px`, opacity: 1 }, { height: "0px", opacity: 0 }], FOLD_MS);
-      this.element.open = false;
-    }
+    this.logged = this.host.swap(this.logged, exercise);
+    const body = this.buildBody();
+    if (this.element.open) await this.fold(false);
     await play(this.head, [{ transform: "none", opacity: 1 }, { transform: FLIP_OUT, opacity: 0 }], FLIP_MS);
-    this.logged = next;
-    this.refresh();
+    this.refresh(body);
     await play(this.head, [{ transform: FLIP_IN, opacity: 0 }, { transform: "none", opacity: 1 }], FLIP_MS);
-    this.element.open = true;
-    await play(this.body, [{ height: "0px", opacity: 0 }, { height: `${this.body.offsetHeight}px`, opacity: 1 }], FOLD_MS);
+    await this.fold(true);
     this.element.classList.remove("swapping");
+  }
+
+  /**
+   * Opens or closes the sets without animating height, which would lay out the page on every frame.
+   * The card is clipped and everything below it slides by transform; the layout changes once, where the animation ends.
+   */
+  private async fold(open: boolean): Promise<void> {
+    if (open) this.element.open = true;
+    const gap = this.element.offsetHeight - this.summary.offsetHeight;
+    const round = getComputedStyle(this.element).borderRadius;
+    // Closing plays forwards; opening plays the same animations in reverse, from closed to open.
+    const direction = open ? "reverse" : "normal";
+    await Promise.all([
+      play(this.element, [{ clipPath: `inset(0 0 0 0 round ${round})` }, { clipPath: `inset(0 0 ${gap}px 0 round ${round})` }], FOLD_MS, direction),
+      play(this.body, [{ opacity: 1 }, { opacity: 0 }], FOLD_MS, direction),
+      ...following(this.element).map((el) => play(el, [{ transform: "none" }, { transform: `translateY(${-gap}px)` }], FOLD_MS, direction)),
+    ]);
+    if (!open) this.element.open = false;
   }
 
   /** Last time's reps under a circle; green ↑ when today's weight is higher. */
@@ -322,9 +339,18 @@ export class ExerciseCard {
 }
 
 /** Resolves when the animation ends; the next step runs before the browser paints the end state, so nothing flickers. */
-function play(el: Element, keyframes: Keyframe[], duration: number): Promise<unknown> {
+function play(el: Element, keyframes: Keyframe[], duration: number, direction: PlaybackDirection = "normal"): Promise<unknown> {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
-  return el.animate(keyframes, { duration, easing: "ease-in-out" }).finished;
+  return el.animate(keyframes, { duration, direction, easing: "ease-in-out" }).finished;
+}
+
+/** Everything laid out after `el` on the page, which moves when its height changes. */
+function following(el: Element): Element[] {
+  const result: Element[] = [];
+  for (let node: Element | null = el; node && !node.matches(".content"); node = node.parentElement) {
+    for (let next = node.nextElementSibling; next; next = next.nextElementSibling) result.push(next);
+  }
+  return result;
 }
 
 function repsClass(set: LoggedSet): string {

@@ -686,17 +686,18 @@ select.field-input {
   opacity: 0.6;
 }
 
-.card.swapping .card-swap svg {
+/* The old sets stay visible while folding but already belong to the next exercise, so taps wait for the swap. */
+.card.swapping {
+  pointer-events: none;
+}
+
+/* Spins the button rather than the icon: an HTML element's transform runs on the compositor, an SVG child's doesn't. */
+.card.swapping .card-swap {
   animation: spin 0.7s ease-in-out;
 }
 
 @keyframes spin {
   to { transform: rotate(-360deg); }
-}
-
-/* Lets the sets fold down to nothing while swapping. */
-.card.swapping .card-body {
-  overflow: hidden;
 }
 
 /* Weight per set rows run edge to edge inside the card. */
@@ -887,7 +888,7 @@ select.field-input {
 @media (prefers-reduced-motion: reduce) {
   .row.highlight > .row-content,
   .circle.highlight,
-  .card.swapping .card-swap svg {
+  .card.swapping .card-swap {
     animation-duration: 0.01s;
   }
 }
