@@ -654,6 +654,51 @@ select.field-input {
   flex: 1;
 }
 
+/* Title and scheme, rolled over together when the exercise is swapped. */
+.card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.card-swap {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blue-tint);
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.card-swap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.card-swap:active {
+  opacity: 0.6;
+}
+
+.card.swapping .card-swap svg {
+  animation: spin 0.7s ease-in-out;
+}
+
+@keyframes spin {
+  to { transform: rotate(-360deg); }
+}
+
+/* Lets the sets fold down to nothing while swapping. */
+.card.swapping .card-body {
+  overflow: hidden;
+}
+
 /* Weight per set rows run edge to edge inside the card. */
 .set-list {
   margin: 0 -16px;
@@ -841,7 +886,8 @@ select.field-input {
 
 @media (prefers-reduced-motion: reduce) {
   .row.highlight > .row-content,
-  .circle.highlight {
+  .circle.highlight,
+  .card.swapping .card-swap svg {
     animation-duration: 0.01s;
   }
 }

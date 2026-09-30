@@ -1,6 +1,6 @@
 import { newExercise } from "../../model/presets";
 import type { Exercise, LoggedExercise, PlanDay, WorkoutLog } from "../../model/types";
-import { applyOrderToDay, durationMinutes, finishWorkout, hasUnfinishedSets, logExercise, previousSet } from "../../services/workout";
+import { applyOrderToDay, durationMinutes, finishWorkout, hasUnfinishedSets, logExercise, previousSet, swapExercise } from "../../services/workout";
 import type { App } from "../App";
 import { ExerciseCard, type CardHost } from "../components/ExerciseCard";
 import { exercisePicker } from "../components/exercisePicker";
@@ -46,6 +46,13 @@ export class WorkoutScreen implements Screen {
         workout.exercises = workout.exercises.filter((e) => e !== logged);
         store.save();
       },
+      alternatives: (logged) => (logged.group ?? []).flatMap((id) => store.exercise(id) ?? []),
+      swap: (logged, exercise) => {
+        const next = swapExercise(logged, exercise, workout.mode);
+        workout.exercises[workout.exercises.indexOf(logged)] = next;
+        store.save();
+        return next;
+      },
       save: () => store.save(),
     };
     this.cards.append(...workout.exercises.map((ex) => new ExerciseCard(ex, host).element));
@@ -80,7 +87,7 @@ export class WorkoutScreen implements Screen {
       this.cards.append(card);
       card.scrollIntoView({ behavior: "smooth", block: "center" });
       this.askToSavePlan(workout, `Add ${exercise.name} to plan too?`, "Add", (day) => {
-        if (!day.exerciseIds.includes(exercise.id)) day.exerciseIds.push(exercise.id);
+        if (!day.slots.some((slot) => slot.includes(exercise.id))) day.slots.push([exercise.id]);
       });
     };
     exercisePicker(

@@ -8,14 +8,40 @@ export function logExercise(exercise: Exercise, mode: PlanMode): LoggedExercise 
     exerciseId: exercise.id,
     name: exercise.name,
     bodyweight: exercise.bodyweight,
-    sets: exercise.schemes[mode].map((s, i) => ({ targetReps: s.reps, reps: s.reps, weight: s.weight, done: false, planIndex: i })),
+    // Under double progression sets start at the top of the range, which is also what earns the increment.
+    sets: exercise.schemes[mode].map((s, i) => ({
+      targetReps: s.maxReps ?? s.reps,
+      reps: s.maxReps ?? s.reps,
+      weight: s.weight,
+      done: false,
+      planIndex: i,
+      minReps: s.maxReps === undefined ? undefined : s.reps,
+    })),
   };
 }
 
+/** The exercise of a group done in the latest workout, or the group's first one. */
+function pickFromGroup(data: AppData, ids: string[]): string | undefined {
+  for (const log of data.history) {
+    const done = log.exercises.find((e) => ids.includes(e.exerciseId));
+    if (done) return done.exerciseId;
+  }
+  return ids[0];
+}
+
+/** Entry for another exercise of the same group, replacing the swapped out one with its sets. */
+export function swapExercise(logged: LoggedExercise, exercise: Exercise, mode: PlanMode): LoggedExercise {
+  return { ...logExercise(exercise, mode), group: logged.group };
+}
+
 export function createWorkout(data: AppData, plan: Plan, day: PlanDay): WorkoutLog {
-  const exercises = day.exerciseIds.flatMap((id) => {
-    const exercise = data.exercises.find((e) => e.id === id);
-    return exercise ? [logExercise(exercise, plan.mode)] : [];
+  const exercises = day.slots.flatMap((slot) => {
+    const ids = slot.filter((id) => data.exercises.some((e) => e.id === id));
+    const exercise = data.exercises.find((e) => e.id === pickFromGroup(data, ids));
+    if (!exercise) return [];
+    const logged = logExercise(exercise, plan.mode);
+    if (ids.length > 1) logged.group = ids;
+    return [logged];
   });
   return {
     id: newId(),
@@ -41,14 +67,16 @@ export function isComplete(logged: LoggedExercise): boolean {
 /** A copy of the last set that belongs to this workout only. */
 export function addSet(logged: LoggedExercise): void {
   const last = logged.sets.at(-1);
-  logged.sets.push({ targetReps: last?.targetReps ?? 5, reps: last?.targetReps ?? 5, weight: last?.weight ?? 0, done: false, planIndex: null });
+  const targetReps = last?.targetReps ?? 5;
+  logged.sets.push({ targetReps, reps: targetReps, weight: last?.weight ?? 0, done: false, planIndex: null, minReps: last?.minReps });
 }
 
-/** Applies the workout's exercise order to the plan day; day exercises missing from the workout keep their slots. */
+/** Applies the workout's exercise order to the plan day; slots missing from the workout keep their place. */
 export function applyOrderToDay(workout: WorkoutLog, day: PlanDay): void {
-  const inWorkout = new Set(workout.exercises.map((e) => e.exerciseId));
-  const ordered = workout.exercises.map((e) => e.exerciseId).filter((id) => day.exerciseIds.includes(id));
-  day.exerciseIds = day.exerciseIds.map((id) => (inWorkout.has(id) ? ordered.shift()! : id));
+  const indexes = workout.exercises.map((e) => day.slots.findIndex((slot) => slot.includes(e.exerciseId))).filter((i) => i >= 0);
+  const inWorkout = new Set(indexes);
+  const ordered = [...inWorkout].map((i) => day.slots[i]!);
+  day.slots = day.slots.map((slot, i) => (inWorkout.has(i) ? ordered.shift()! : slot));
 }
 
 /** Saves completed sets to history, drops the rest, and updates exercise weights for next time. */

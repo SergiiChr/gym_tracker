@@ -1,6 +1,6 @@
 import type { Exercise, PlanMode, Settings } from "../../model/types";
 import { formatWeight, STEP_OPTIONS } from "../../model/units";
-import { effectiveRule } from "../../services/progression";
+import { effectiveRule, isDoubleProgression } from "../../services/progression";
 import type { App } from "../App";
 import { numberRow, segmentedRow, selectRow, textRow, toggleRow } from "../components/forms";
 import { swipeToDelete } from "../components/gestures";
@@ -96,7 +96,7 @@ export class ExerciseEditScreen implements Screen {
       h("span", {}, "Set"),
       h("span", {}),
       perSetWeight ? h("span", {}, settings.unit) : null,
-      h("span", {}, "Reps"),
+      h("span", {}, isDoubleProgression(sets) ? "Min reps" : "Reps"),
     );
     const rows = sets.map((set, i) =>
       swipeToDelete(
@@ -123,7 +123,7 @@ export class ExerciseEditScreen implements Screen {
     );
     const add = actionRow("Add set", "Add a set copying the last one", () => {
       const last = sets.at(-1);
-      sets.push({ reps: last?.reps ?? settings.defaultReps, weight: last?.weight ?? 0 });
+      sets.push(last ? { ...last } : { reps: settings.defaultReps, weight: 0 });
       this.app.commit();
     });
     const footer = `Used by "${MODE_LABELS[this.mode]}" plans. Weights update after each finished workout.`;
@@ -135,6 +135,9 @@ export class ExerciseEditScreen implements Screen {
     const commit = (): void => this.app.commit();
     const rule = effectiveRule(exercise, settings);
     const custom = exercise.increment;
+    const sets = exercise.schemes[this.mode];
+    const double = isDoubleProgression(sets);
+    const top = Math.max(0, ...sets.map((s) => s.maxReps ?? s.reps));
     const rows = [
       toggleRow(
         "Use global settings",
@@ -153,20 +156,53 @@ export class ExerciseEditScreen implements Screen {
           (step) => ((custom.step = step), commit()),
           "How much weight is added",
         ),
-        numberRow("Target reps", custom.targetReps, (reps) => ((custom.targetReps = reps), commit()), "Reps needed on each checked set to earn an increment"),
       );
+      if (!double) {
+        rows.push(numberRow("Target reps", custom.targetReps, (reps) => ((custom.targetReps = reps), commit()), "Reps needed on each checked set to earn an increment"));
+      }
     }
     rows.push(
       toggleRow(
-        "Last set only",
-        exercise.incrementLastSetOnly,
-        (on) => ((exercise.incrementLastSetOnly = on), commit()),
-        "Check and increase only the last (top) set instead of all sets",
+        "Double progression",
+        double,
+        (on) => {
+          // A new range tops out 4 reps above the most planned reps.
+          for (const set of sets) {
+            if (on) set.maxReps = top + 4;
+            else delete set.maxReps;
+          }
+          commit();
+        },
+        `Reps go up within a range before the weight does. Set for the "${MODE_LABELS[this.mode]}" logging style only`,
       ),
     );
-    const which = exercise.incrementLastSetOnly ? "the last set reaches" : "every set reaches";
+    if (double) {
+      rows.push(
+        h(
+          "li",
+          { className: "row", title: "Top of the rep range for all sets" },
+          h(
+            "div",
+            { className: "row-content set-edit" },
+            h("span", { className: "row-title" }, "Top reps"),
+            stepper({ value: top, step: 1, decimal: false, label: "Top reps", onChange: (reps) => (sets.forEach((s) => (s.maxReps = reps)), commit()) }),
+          ),
+        ),
+      );
+    } else {
+      rows.push(
+        toggleRow(
+          "Last set only",
+          exercise.incrementLastSetOnly,
+          (on) => ((exercise.incrementLastSetOnly = on), commit()),
+          "Check and increase only the last (top) set instead of all sets",
+        ),
+      );
+    }
+    const which = exercise.incrementLastSetOnly && !double ? "the last set reaches" : "every set reaches";
+    const range = double ? " Sets start at the top of the range; log fewer reps when you miss it." : "";
     const footer = rule.enabled
-      ? `Weight goes up by ${formatWeight(rule.step)} ${settings.unit} next workout when ${which} ${rule.targetReps} reps.`
+      ? `Weight goes up by ${formatWeight(rule.step)} ${settings.unit} next workout when ${which} ${double ? top : rule.targetReps} reps.${range}`
       : "Auto-increment is off.";
     return group("Auto-increment", rows, footer);
   }

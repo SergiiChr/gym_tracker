@@ -36,7 +36,7 @@ export class BackupScreen implements Screen {
                 "ul",
                 {},
                 h("li", {}, "A JSON file, like the one Export produces."),
-                h("li", {}, "Exercises need an id and a name; plan days list exercise ids in order."),
+                h("li", {}, "Exercises need an id and a name; plan days list slots of exercise ids in order. A slot with several ids is an exercise group."),
                 h("li", {}, `Plan "mode": "fixed" is Same weight, "perSet" is Weight per set.`),
                 h("li", {}, `Weights are in ${unit}. A scheme for one mode is copied to the other.`),
                 h("li", {}, "Settings, history and other fields are optional and get defaults."),

@@ -1,7 +1,8 @@
 import { bothModes, DATA_VERSION, emptyData, newId } from "./presets";
-import type { AppData, Exercise, LoggedSet, Plan, SetSpec } from "./types";
+import type { AppData, Exercise, LoggedSet, Plan, PlanDay, SetSpec } from "./types";
 
 type ExerciseV1 = Omit<Exercise, "schemes"> & { schemes?: Exercise["schemes"]; sets?: SetSpec[] };
+type PlanDayV3 = Omit<PlanDay, "slots"> & { slots?: string[][]; exerciseIds?: string[] };
 
 /** Upgrades data saved by an older app version, in place. Throws on data from a newer version. */
 export function migrate(data: AppData): AppData {
@@ -30,6 +31,14 @@ export function migrate(data: AppData): AppData {
       }
     }
     data.version = 3;
+  }
+  if (data.version === 3) {
+    // v4: days hold slots, so several exercises can share one as an exercise group.
+    for (const day of data.plans.flatMap((p) => p.days) as PlanDayV3[]) {
+      day.slots = (day.exerciseIds ?? []).map((id) => [id]);
+      delete day.exerciseIds;
+    }
+    data.version = 4;
   }
   return data;
 }

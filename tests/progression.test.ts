@@ -58,6 +58,16 @@ describe("applyResult", () => {
     expect(squat.schemes.fixed[0]?.weight).toBe(105);
   });
 
+  it("increments all sets under double progression once every set reaches the top", () => {
+    const { data, squat } = sampleData();
+    squat.incrementLastSetOnly = true; // Ignored: double progression always checks every set.
+    squat.schemes.fixed = Array.from({ length: 3 }, () => ({ reps: 6, maxReps: 10, weight: 100 }));
+    applyResult(logged([10, 10, 9]), squat, "fixed", data.settings);
+    expect(squat.schemes.fixed.map((s) => s.weight)).toEqual([100, 100, 100]);
+    applyResult(logged([10, 10, 10]), squat, "fixed", data.settings);
+    expect(squat.schemes.fixed.map((s) => s.weight)).toEqual([102.5, 102.5, 102.5]);
+  });
+
   it("never increments bodyweight exercises", () => {
     const { data, squat } = sampleData();
     squat.bodyweight = true;

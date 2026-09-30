@@ -8,6 +8,7 @@ import { BackupScreen } from "./ui/screens/BackupScreen";
 import { DayEditScreen } from "./ui/screens/DayEditScreen";
 import { ExerciseEditScreen } from "./ui/screens/ExerciseEditScreen";
 import { ExercisesScreen } from "./ui/screens/ExercisesScreen";
+import { GroupEditScreen } from "./ui/screens/GroupEditScreen";
 import { HistoryDetailScreen } from "./ui/screens/HistoryDetailScreen";
 import { HistoryScreen } from "./ui/screens/HistoryScreen";
 import { HomeScreen } from "./ui/screens/HomeScreen";
@@ -30,15 +31,21 @@ router
   .add("/plans", () => new PlansScreen(app))
   .add("/plans/:planId", (p) => new PlanEditScreen(app, p.planId!))
   .add("/plans/:planId/days/:dayId", (p) => new DayEditScreen(app, p.planId!, p.dayId!))
-  .add("/plans/:planId/days/:dayId/exercises/:id", (p) => {
-    const mode = app.store.plan(p.planId!)?.mode ?? "fixed";
-    return new ExerciseEditScreen(app, p.id!, `/plans/${p.planId}/days/${p.dayId}`, mode);
-  })
+  .add("/plans/:planId/days/:dayId/exercises/:id", (p) => planExerciseScreen(p.planId!, p.id!, `/plans/${p.planId}/days/${p.dayId}`))
+  .add("/plans/:planId/days/:dayId/groups/:index", (p) => new GroupEditScreen(app, p.planId!, p.dayId!, Number(p.index)))
+  .add("/plans/:planId/days/:dayId/groups/:index/exercises/:id", (p) =>
+    planExerciseScreen(p.planId!, p.id!, `/plans/${p.planId}/days/${p.dayId}/groups/${p.index}`),
+  )
   .add("/exercises", () => new ExercisesScreen(app))
   .add("/exercises/:id", (p) => exerciseScreen(p.id!, "fixed"))
   .add("/exercises/:id/:mode", (p) => exerciseScreen(p.id!, p.mode === "perSet" ? "perSet" : "fixed"))
   .add("/settings", () => new SettingsScreen(app))
   .add("/settings/backup", () => new BackupScreen(app));
+
+/** Opened from a plan, the exercise shows the sets for that plan's logging style. */
+function planExerciseScreen(planId: string, id: string, backPath: string): ExerciseEditScreen {
+  return new ExerciseEditScreen(app, id, backPath, app.store.plan(planId)?.mode ?? "fixed");
+}
 
 function exerciseScreen(id: string, mode: PlanMode): ExerciseEditScreen {
   return new ExerciseEditScreen(app, id, "/exercises", mode, (next) => `/exercises/${id}/${next}`);

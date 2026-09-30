@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet } from "../src/services/workout";
+import { newExercise } from "../src/model/presets";
+import { addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet, swapExercise } from "../src/services/workout";
 import { sampleData } from "./helpers";
 
 describe("workout", () => {
@@ -93,10 +94,40 @@ describe("workout", () => {
   it("applies the workout order to the plan day, keeping slots of exercises not in the workout", () => {
     const { data, plan, squat, bench } = sampleData();
     const day = plan.days[0]!;
-    day.exerciseIds.splice(1, 0, "other");
+    day.slots.splice(1, 0, ["other"]);
     const workout = createWorkout(data, plan, day);
     workout.exercises.reverse();
     applyOrderToDay(workout, day);
-    expect(day.exerciseIds).toEqual([bench.id, "other", squat.id]);
+    expect(day.slots).toEqual([[bench.id], ["other"], [squat.id]]);
+  });
+
+  it("shows the first exercise of a group, then the one done last, and saves only the one done", () => {
+    const { data, plan, squat, bench } = sampleData();
+    const legPress = { ...newExercise(data.settings), name: "Leg Press" };
+    data.exercises.push(legPress);
+    const day = plan.days[0]!;
+    day.slots = [[squat.id, legPress.id], [bench.id]];
+    const workout = createWorkout(data, plan, day);
+    expect(workout.exercises[0]?.name).toBe("Squat");
+    expect(workout.exercises[0]?.group).toEqual([squat.id, legPress.id]);
+
+    workout.exercises[0]!.sets[0]!.done = true;
+    const swapped = swapExercise(workout.exercises[0]!, legPress, plan.mode);
+    workout.exercises[0] = swapped;
+    swapped.sets[0]!.done = true;
+    finishWorkout(data, workout);
+    expect(data.history[0]?.exercises.map((e) => e.name)).toEqual(["Leg Press"]);
+    expect(createWorkout(data, plan, day).exercises[0]?.name).toBe("Leg Press");
+
+    workout.exercises.reverse();
+    applyOrderToDay(workout, day);
+    expect(day.slots).toEqual([[squat.id, legPress.id], [bench.id]]);
+  });
+
+  it("starts double progression sets at the top of the range", () => {
+    const { data, plan, bench } = sampleData();
+    bench.schemes.fixed = [{ reps: 6, maxReps: 10, weight: 60 }];
+    const [set] = createWorkout(data, plan, plan.days[0]!).exercises[1]!.sets;
+    expect(set).toMatchObject({ targetReps: 10, reps: 10, minReps: 6 });
   });
 });

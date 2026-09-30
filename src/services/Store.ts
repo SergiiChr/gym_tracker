@@ -63,7 +63,7 @@ export class Store {
   deleteExercise(id: string): void {
     this.data.exercises = this.data.exercises.filter((e) => e.id !== id);
     for (const plan of this.data.plans) {
-      for (const day of plan.days) day.exerciseIds = day.exerciseIds.filter((e) => e !== id);
+      for (const day of plan.days) day.slots = day.slots.map((slot) => slot.filter((e) => e !== id)).filter((slot) => slot.length > 0);
     }
     this.save();
   }
