@@ -66,9 +66,10 @@ describe("presets", () => {
     expect(plan.mode).toBe("fixed");
     expect(plan.days.map((d) => d.slots.length)).toEqual([7, 8, 9]);
     expect(plan.days[2]?.slots[0]?.map(name)).toEqual(["Hack Squat", "Leg Press"]);
-    // Shared with My preset: keeps its weights there and gets the range for Same weight.
+    expect(plan.days[2]?.slots[2]?.map(name)).toEqual(["Weighted Pull-up", "Lat Pulldown"]);
+    // Shared with My preset: keeps its weights there and gets the range for Same weight at its heaviest weight.
     const press = data.exercises.find((e) => e.name === "Incline Dumbbell Press")!;
-    expect(press.schemes.fixed).toEqual(Array.from({ length: 3 }, () => ({ reps: 6, maxReps: 10, weight: 0 })));
+    expect(press.schemes.fixed).toEqual(Array.from({ length: 3 }, () => ({ reps: 6, maxReps: 10, weight: 30 })));
     expect(press.schemes.perSet.at(-1)).toEqual({ reps: 8, weight: 30 });
     expect(data.exercises.filter((e) => e.name === "Hack Squat")).toHaveLength(1);
   });

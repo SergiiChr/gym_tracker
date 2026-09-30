@@ -80,8 +80,8 @@ class PresetBuilder {
   }
 
   /** Double progression at one weight: `sets` × min–max reps, starting at 0 weight. */
-  range(name: string, sets: number, [min, max]: [number, number], bodyweight = false): Exercise {
-    const exercise = this.exercise({ name, sets: Array.from({ length: sets }, () => [min, 0] as const), restSec: 120, bodyweight });
+  range(name: string, sets: number, [min, max]: [number, number]): Exercise {
+    const exercise = this.exercise({ name, sets: Array.from({ length: sets }, () => [min, 0] as const), restSec: 120 });
     for (const set of Object.values(exercise.schemes).flat()) set.maxReps = max;
     return exercise;
   }
@@ -180,18 +180,19 @@ class PresetBuilder {
 
   /** Three full body days in the Same weight style with double progression; "or" choices are exercise groups. */
   fullBody(): Program {
-    const r = (name: string, sets: number, min: number, max: number, bodyweight = false): Exercise => this.range(name, sets, [min, max], bodyweight);
+    const r = (name: string, sets: number, min: number, max: number): Exercise => this.range(name, sets, [min, max]);
     const hold = (name: string, reps: number): Exercise => this.exercise({ name, sets: [[reps, 0], [reps, 0]], restSec: 60, bodyweight: true });
     const hackSquat = r("Hack Squat", 3, 6, 10);
     const lateralRaise = r("Lateral Raise", 3, 12, 20);
     const reverseFly = r("Reverse Fly", 2, 12, 20);
+    const weightedPullUp = r("Weighted Pull-up", 3, 6, 10);
     const days: [string, (Exercise | Exercise[])[]][] = [
       [
         "Day A",
         [
           hackSquat,
           r("Incline Dumbbell Press", 3, 6, 10),
-          r("Weighted Pull-up", 3, 6, 10),
+          weightedPullUp,
           r("Chest-supported T-Bar Row", 3, 8, 12),
           r("Leg Curl", 2, 10, 15),
           lateralRaise,
@@ -216,7 +217,7 @@ class PresetBuilder {
         [
           [hackSquat, r("Leg Press", 3, 10, 15)],
           r("Flat Dumbbell Press", 3, 8, 12),
-          [r("Pull-up", 3, 8, 12, true), r("Lat Pulldown", 3, 8, 12)],
+          [weightedPullUp, r("Lat Pulldown", 3, 8, 12)],
           r("Romanian Deadlift", 2, 8, 12),
           lateralRaise,
           [r("Face Pull", 2, 12, 20), reverseFly],
@@ -259,6 +260,7 @@ const RENAMED: Record<string, string> = {
  * Exercises that already exist with the same name are reused, so their progress carries over.
  * A reused exercise takes the preset's sets for its logging style when it was never set up (still at 0 weight),
  * or when plans only use it in the other style, since its sets for this style are then just a copy.
+ * The new sets keep the heaviest weight it had in that style, so set up weights aren't reset to 0.
  * Programs earlier in the list win the other name clashes, so My preset's real weights beat blank templates.
  */
 export function addPresets(data: AppData): void {
@@ -278,7 +280,8 @@ export function addPresets(data: AppData): void {
         resolved.set(exercise.id, existing.id);
         const modes = data.plans.filter((p) => p.days.some((d) => d.slots.some((s) => s.includes(existing.id)))).map((p) => p.mode);
         const unused = modes.length > 0 && !modes.includes(mode);
-        if (unused || existing.schemes[mode].every((s) => s.weight === 0)) existing.schemes[mode] = exercise.schemes[mode];
+        const heaviest = Math.max(0, ...existing.schemes[mode].map((s) => s.weight));
+        if (unused || heaviest === 0) existing.schemes[mode] = exercise.schemes[mode].map((s) => ({ ...s, weight: heaviest || s.weight }));
       } else {
         byName.set(key, exercise);
         data.exercises.push(exercise);
