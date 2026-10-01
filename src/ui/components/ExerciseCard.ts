@@ -34,7 +34,7 @@ export interface CardHost {
 const COLLAPSE_DELAY_MS = 4000;
 const FOLD_MS = 220;
 /** Long, so a set isn't reset by a hold meant as a tap; the number erases over the same time. */
-const RESET_HOLD_MS = 3000;
+export const RESET_HOLD_MS = 3000;
 const FLIP_MS = 260;
 /** The title turns like a drum rolling toward the viewer: the old one goes down and away, the next one comes over the top. */
 const FLIP_OUT = "perspective(400px) translateY(60%) rotateX(-90deg)";

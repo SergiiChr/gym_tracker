@@ -89,7 +89,7 @@ export function onHold(el: HTMLElement, action: () => void, ms = HOLD_MS): void 
   el.dataset.hold = "";
   el.style.setProperty("--hold-ms", `${ms}ms`);
   el.addEventListener("pointerdown", (e) => {
-    downAt = e.timeStamp;
+    downAt = Date.now();
     startX = e.clientX;
     startY = e.clientY;
     el.classList.add("holding");
@@ -99,8 +99,8 @@ export function onHold(el: HTMLElement, action: () => void, ms = HOLD_MS): void 
     }, ms);
   });
   el.addEventListener("pointermove", (e) => Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_THRESHOLD && cancel());
-  el.addEventListener("pointerup", (e) => {
-    pressMs = e.timeStamp - downAt;
+  el.addEventListener("pointerup", () => {
+    pressMs = Date.now() - downAt;
     cancel();
   });
   el.addEventListener("pointercancel", cancel);
