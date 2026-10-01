@@ -1,10 +1,12 @@
 const STORAGE_KEY = "gym-tracker-log";
-const MAX_ENTRIES = 300;
+/** Caps a day with a repeating error, so the log can't crowd out workout data in storage. */
+const MAX_ENTRIES = 100;
 
 type Level = "error" | "warn";
 
 /**
- * Keeps the latest errors and warnings across reloads, so they can be exported from settings.
+ * Keeps today's latest errors and warnings across reloads, so they can be exported from settings.
+ * Entries from earlier days are dropped on load and on the next write.
  * Storage failures are ignored: logging must never break the app, and entries still live in memory.
  */
 class Log {
@@ -33,7 +35,7 @@ class Log {
 
   private add(level: Level, message: string, cause: unknown): void {
     console[level](message, cause ?? "");
-    this.entries = [...this.entries, `${new Date().toISOString()} ${level.toUpperCase()} ${message}${describe(cause)}`].slice(-MAX_ENTRIES);
+    this.entries = [...this.entries.filter(isToday), `${new Date().toISOString()} ${level.toUpperCase()} ${message}${describe(cause)}`].slice(-MAX_ENTRIES);
     persist(this.entries);
   }
 }
@@ -45,9 +47,14 @@ function describe(cause: unknown): string {
   return `: ${cause.name}: ${cause.message}${cause.stack ? `\n${cause.stack}` : ""}`;
 }
 
+/** Entries start with their ISO timestamp; the day is compared in local time, like the user's day. */
+function isToday(entry: string): boolean {
+  return new Date(entry.split(" ", 1)[0]!).toDateString() === new Date().toDateString();
+}
+
 function load(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as string[];
+    return (JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as string[]).filter(isToday);
   } catch {
     return [];
   }
