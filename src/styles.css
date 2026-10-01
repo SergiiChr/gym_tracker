@@ -1,9 +1,6 @@
 /* Native app look: grouped inset lists, system colors, light and dark mode. */
 :root {
   color-scheme: light dark;
-  --stepper-button: 34px;
-  /* Shared by the workout card's weight stepper and the weight in its header, which sits right above it. */
-  --card-weight-width: 54px;
   --bg: #f2f2f7;
   --cell: #ffffff;
   --cell-pressed: #e5e5ea;
@@ -491,7 +488,7 @@ select.field-input {
 .stepper-button {
   display: grid;
   place-items: center;
-  width: var(--stepper-button);
+  width: 34px;
   padding: 0;
   border: 0;
   background: none;
@@ -560,10 +557,10 @@ select.field-input {
 
 .card summary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 12px 14px;
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -576,7 +573,7 @@ select.field-input {
 
 .card-title {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .card summary .drag-handle {
@@ -590,7 +587,7 @@ select.field-input {
 }
 
 .card-body {
-  padding: 0 16px 14px;
+  padding: 0 14px 12px;
 }
 
 .card-weight {
@@ -599,33 +596,25 @@ select.field-input {
   margin-bottom: 12px;
 }
 
+/* Smaller than other steppers, in line with the scaled down card. */
+.card-weight .stepper {
+  height: 32px;
+}
+
+.card-weight .stepper-button {
+  width: 30px;
+}
+
 .card-weight .stepper-value {
-  width: var(--card-weight-width);
+  width: 3em;
+  font-size: 15px;
 }
 
-/* Moves the stepper left by the swap button and its gap, which push the header weight left too. */
-.card:has(.card-swap) .card-weight {
-  padding-right: 44px;
-}
-
-.card-detail-weight,
-.card-detail-unit {
-  display: inline-block;
-  text-align: center;
-}
-
-.card-detail-weight {
-  width: var(--card-weight-width);
-}
-
-.card-detail-unit {
-  width: var(--stepper-button);
-}
-
+/* Sized so five sets and the + circle fit one row on a phone. */
 .circles {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .set-cell {
@@ -636,13 +625,13 @@ select.field-input {
 }
 
 .circle {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 0;
   background: var(--fill);
   color: var(--muted);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   transition: transform 0.1s;
 }
@@ -660,8 +649,8 @@ select.field-input {
 }
 
 .circle-add svg {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
 .circle.done {
@@ -676,7 +665,7 @@ select.field-input {
 }
 
 .set-prev {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   min-height: 1em;
 }
@@ -704,7 +693,7 @@ select.field-input {
 .card-head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
@@ -877,19 +866,19 @@ select.field-input {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 34px;
-  padding: 0 14px 0 10px;
+  height: 30px;
+  padding: 0 12px 0 8px;
   border: 0;
-  border-radius: 17px;
+  border-radius: 15px;
   background: var(--fill);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -904,7 +893,7 @@ select.field-input {
 
 .chip-danger {
   margin-left: auto;
-  width: 34px;
+  width: 30px;
   padding: 0;
   justify-content: center;
   background: var(--red-tint);

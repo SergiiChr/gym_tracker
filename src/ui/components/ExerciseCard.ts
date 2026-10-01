@@ -2,14 +2,14 @@ import type { Exercise, LoggedExercise, LoggedSet, PlanMode, Unit } from "../../
 import { formatWeight } from "../../model/units";
 import { addPlannedSet, addSet, cycleReps, isComplete, removePlannedSet, resetSet } from "../../services/workout";
 import { h, svg, type Child } from "../dom";
-import { repsText, schemeText } from "../format";
+import { schemeText } from "../format";
 import { ICONS } from "../icons";
 import { makeSortable, moveItem, onHold, swipeToDelete } from "./gestures";
 import { confirmDelete } from "./layout";
 import { numberInput } from "./forms";
 import { dragHandle } from "./list";
 import { actionSheet, confirmDialog, scopeSheet } from "./popups";
-import { stepper } from "./stepper";
+import { weightInput } from "./stepper";
 
 export interface CardHost {
   mode: PlanMode;
@@ -90,20 +90,11 @@ export class ExerciseCard {
     return this.host.mode === "fixed" ? this.fixedBody() : this.perSetBody();
   }
 
+  /** Same weight cards leave the header to the title: the body already shows the weight and every set. */
   private updateDetail(): void {
-    const { sets, bodyweight } = this.logged;
-    const first = sets[0];
-    if (this.host.mode === "fixed") {
-      const reps = first?.minReps === undefined ? String(first?.targetReps ?? 0) : repsText(first.minReps, first.targetReps);
-      // The weight and unit get boxes as wide as the stepper's number and + button, so the numbers line up.
-      const load =
-        bodyweight || !first
-          ? []
-          : [" · ", h("span", { className: "card-detail-weight" }, formatWeight(first.weight)), h("span", { className: "card-detail-unit" }, this.host.unit)];
-      this.detail.replaceChildren(`${sets.length}×${reps}`, ...load);
-    } else {
-      this.detail.textContent = `${sets.length} ${sets.length === 1 ? "set" : "sets"}`;
-    }
+    if (this.host.mode === "fixed") return;
+    const count = this.logged.sets.length;
+    this.detail.textContent = `${count} ${count === 1 ? "set" : "sets"}`;
   }
 
   /** Called after any change to a set's state; collapses the card a while after the last change that leaves every set done. */
@@ -142,23 +133,15 @@ export class ExerciseCard {
       return { cell: h("div", { className: "set-cell" }, circle, prev), paint };
     });
 
-    // The unit is left out: the card header already shows the weight with it.
     const weightRow = logged.bodyweight
       ? null
       : h(
           "div",
           { className: "card-weight", title: "Working weight for all sets" },
-          stepper({
-            value: logged.sets[0]?.weight ?? 0,
-            step: host.step,
-            decimal: true,
-            label: `Weight in ${host.unit}`,
-            onChange: (value) => {
-              for (const set of logged.sets) set.weight = value;
-              this.updateDetail();
-              circles.forEach((c) => c.paint());
-              host.save();
-            },
+          weightInput(logged.sets[0]?.weight ?? 0, host.step, host.unit, (value) => {
+            for (const set of logged.sets) set.weight = value;
+            circles.forEach((c) => c.paint());
+            host.save();
           }),
         );
     const addCircle = h("button", { type: "button", className: "circle circle-add", title: "Add a set", ariaLabel: "Add set", onclick: () => this.addSet() }, svg(ICONS.plus));
