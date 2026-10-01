@@ -653,6 +653,21 @@ select.field-input {
   height: 18px;
 }
 
+/* Holding a logged set resets it; its number erases top to bottom until then. */
+.circle-reps {
+  display: inline-block;
+}
+
+.circle:not(.todo).holding .circle-reps {
+  animation: erase var(--hold-ms) linear forwards;
+}
+
+/* Both ends are insets: from no clip-path it would jump halfway instead of easing. */
+@keyframes erase {
+  from { clip-path: inset(0 0 0 0); }
+  to { clip-path: inset(100% 0 0 0); }
+}
+
 .circle.done {
   background: var(--green);
   color: #fff;

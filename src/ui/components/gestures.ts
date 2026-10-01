@@ -71,34 +71,45 @@ export function swipeToDelete(row: HTMLLIElement, onDelete: () => void, label = 
 }
 
 /**
- * Runs `action` when the element is pressed and held without moving.
- * Call it before adding the element's click listener: the click that follows the release is swallowed.
+ * Runs `action` when the element is pressed and held for `ms` without moving.
+ * While pressed, the element has the `holding` class and `--hold-ms` is the hold time, so CSS can animate the progress in step.
+ * Call it before adding the element's click listener: the click after any press longer than a tap is swallowed, even when let go early.
  * Touch tooltips skip elements marked with `data-hold`, since holding them does something else.
  */
-export function onHold(el: HTMLElement, action: () => void): void {
+export function onHold(el: HTMLElement, action: () => void, ms = HOLD_MS): void {
   let timer: number | undefined;
-  let held = false;
+  let downAt = 0;
+  let pressMs = 0;
   let startX = 0;
   let startY = 0;
-  const cancel = (): void => window.clearTimeout(timer);
+  const cancel = (): void => {
+    window.clearTimeout(timer);
+    el.classList.remove("holding");
+  };
   el.dataset.hold = "";
+  el.style.setProperty("--hold-ms", `${ms}ms`);
   el.addEventListener("pointerdown", (e) => {
-    held = false;
+    downAt = e.timeStamp;
     startX = e.clientX;
     startY = e.clientY;
+    el.classList.add("holding");
     timer = window.setTimeout(() => {
-      held = true;
+      cancel();
       action();
-    }, HOLD_MS);
+    }, ms);
   });
   el.addEventListener("pointermove", (e) => Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_THRESHOLD && cancel());
-  el.addEventListener("pointerup", cancel);
+  el.addEventListener("pointerup", (e) => {
+    pressMs = e.timeStamp - downAt;
+    cancel();
+  });
   el.addEventListener("pointercancel", cancel);
   el.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Measured at release rather than here, so a keyboard click (no press) always goes through.
   el.addEventListener("click", (e) => {
-    if (!held) return;
-    held = false;
-    e.stopImmediatePropagation();
+    const long = pressMs >= HOLD_MS;
+    pressMs = 0;
+    if (long) e.stopImmediatePropagation();
   });
 }
 

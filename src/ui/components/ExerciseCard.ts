@@ -33,6 +33,8 @@ export interface CardHost {
 /** Long enough to tap the last circle down to the reps actually done before the card folds away. */
 const COLLAPSE_DELAY_MS = 4000;
 const FOLD_MS = 220;
+/** Long, so a set isn't reset by a hold meant as a tap; the number erases over the same time. */
+const RESET_HOLD_MS = 3000;
 const FLIP_MS = 260;
 /** The title turns like a drum rolling toward the viewer: the old one goes down and away, the next one comes over the top. */
 const FLIP_OUT = "perspective(400px) translateY(60%) rotateX(-90deg)";
@@ -114,7 +116,7 @@ export class ExerciseCard {
       const prev = h("span", { className: "set-prev" });
       const circle = h("button", { type: "button", className: "circle", title: "Tap to log reps; tap again for one rep less; hold to reset" });
       const paint = (): void => {
-        circle.textContent = String(set.reps);
+        circle.replaceChildren(h("span", { className: "circle-reps" }, set.reps));
         circle.className = `circle ${set.done ? repsClass(set) : "todo"}`;
         this.paintHint(prev, set);
       };
@@ -122,7 +124,7 @@ export class ExerciseCard {
         resetSet(set);
         paint();
         this.changed(false);
-      });
+      }, RESET_HOLD_MS);
       circle.addEventListener("click", () => {
         const wasDone = set.done;
         cycleReps(set);
