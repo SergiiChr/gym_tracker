@@ -28,8 +28,7 @@ export function installTouchTooltips(): void {
   // Finger jitter fires pointermove constantly, so only a real drag cancels the hold.
   document.addEventListener("pointermove", (e) => Math.hypot(e.clientX - startX, e.clientY - startY) > 10 && cancel(), { passive: true });
   for (const type of ["pointerup", "pointercancel", "scroll"]) {
-    // Capture, because scroll on #app doesn't bubble to the document.
-    document.addEventListener(type, cancel, { passive: true, capture: true });
+    document.addEventListener(type, cancel, { passive: true });
   }
   // Releasing a long press would otherwise also count as a tap.
   document.addEventListener(

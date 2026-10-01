@@ -37,13 +37,13 @@ export class Router {
   render(): void {
     const path = location.hash.slice(1) || "/";
     const samePath = path === this.currentPath;
-    const scroll = this.root.scrollTop;
+    const scroll = window.scrollY;
     const [route, params] = this.match(path) ?? this.match("/")!;
     this.current?.dispose?.();
     this.current = route.create(params);
     this.currentPath = path;
     this.root.replaceChildren(this.current.render());
-    this.root.scrollTop = samePath ? scroll : 0;
+    window.scrollTo(0, samePath ? scroll : 0);
   }
 
   private match(path: string): [Route, Params] | undefined {

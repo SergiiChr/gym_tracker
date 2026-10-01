@@ -65,14 +65,6 @@ body {
   -webkit-touch-callout: none;
 }
 
-/* Content scrolls inside #app, not the document.
-   iOS shifts fixed elements (rest timer, finish button) when the document scrolls with momentum or after the keyboard closes, and leaves them stuck mid-screen. */
-#app {
-  position: fixed;
-  inset: 0;
-  overflow-y: auto;
-}
-
 [hidden] {
   display: none !important;
 }
