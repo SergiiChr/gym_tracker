@@ -1,4 +1,5 @@
 import "./styles.css";
+import { log } from "./services/log";
 import { browserStorage, Store } from "./services/Store";
 import { App } from "./ui/App";
 import { installTouchTooltips } from "./ui/components/tooltips";
@@ -17,6 +18,10 @@ import { PlansScreen } from "./ui/screens/PlansScreen";
 import { SettingsScreen } from "./ui/screens/SettingsScreen";
 import { StartScreen } from "./ui/screens/StartScreen";
 import { WorkoutScreen } from "./ui/screens/WorkoutScreen";
+
+// Installed first, so errors while loading data or drawing the first screen are caught too.
+window.addEventListener("error", (e) => log.error(`Uncaught error on ${location.hash || "#/"}`, e.error ?? e.message));
+window.addEventListener("unhandledrejection", (e) => log.error(`Unhandled rejection on ${location.hash || "#/"}`, e.reason));
 
 const router = new Router(document.getElementById("app")!);
 const app = new App(new Store(browserStorage()), router);

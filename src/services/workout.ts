@@ -1,5 +1,5 @@
 import { newId } from "../model/presets";
-import type { AppData, Exercise, LoggedExercise, LoggedSet, Plan, PlanDay, PlanMode, WorkoutLog } from "../model/types";
+import type { AppData, Exercise, LoggedExercise, LoggedSet, Plan, PlanDay, PlanMode, SetSpec, WorkoutLog } from "../model/types";
 import { applyResult } from "./progression";
 
 /** Workout entry prefilled with the exercise's planned sets for this logging style. */
@@ -71,6 +71,23 @@ export function addSet(logged: LoggedExercise): void {
   logged.sets.push({ targetReps, reps: targetReps, weight: last?.weight ?? 0, done: false, planIndex: null, minReps: last?.minReps });
 }
 
+/** Adds a set to the workout and to the exercise's planned sets, so later workouts get it too. */
+export function addPlannedSet(logged: LoggedExercise, exercise: Exercise, mode: PlanMode): void {
+  addSet(logged);
+  const set = logged.sets.at(-1)!;
+  const spec: SetSpec = set.minReps === undefined ? { reps: set.targetReps, weight: set.weight } : { reps: set.minReps, maxReps: set.targetReps, weight: set.weight };
+  set.planIndex = exercise.schemes[mode].push(spec) - 1;
+}
+
+/** Removes a set from the workout and its planned set from the exercise; later planned sets move up one place. */
+export function removePlannedSet(logged: LoggedExercise, index: number, exercise: Exercise, mode: PlanMode): void {
+  const [removed] = logged.sets.splice(index, 1);
+  const planIndex = removed?.planIndex;
+  if (planIndex === null || planIndex === undefined) return;
+  exercise.schemes[mode].splice(planIndex, 1);
+  for (const set of logged.sets) if (set.planIndex !== null && set.planIndex > planIndex) set.planIndex -= 1;
+}
+
 /** Applies the workout's exercise order to the plan day; slots missing from the workout keep their place. */
 export function applyOrderToDay(workout: WorkoutLog, day: PlanDay): void {
   const indexes = workout.exercises.map((e) => day.slots.findIndex((slot) => slot.includes(e.exerciseId))).filter((i) => i >= 0);
@@ -112,9 +129,14 @@ export function cycleReps(set: LoggedSet): void {
   } else if (set.reps > 0) {
     set.reps -= 1;
   } else {
-    set.done = false;
-    set.reps = set.targetReps;
+    resetSet(set);
   }
+}
+
+/** Back to not done at target reps. */
+export function resetSet(set: LoggedSet): void {
+  set.done = false;
+  set.reps = set.targetReps;
 }
 
 export function durationMinutes(log: WorkoutLog): number {

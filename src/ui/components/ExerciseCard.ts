@@ -1,14 +1,14 @@
 import type { Exercise, LoggedExercise, LoggedSet, PlanMode, Unit } from "../../model/types";
 import { formatWeight } from "../../model/units";
-import { addSet, cycleReps, isComplete } from "../../services/workout";
+import { addPlannedSet, addSet, cycleReps, isComplete, removePlannedSet, resetSet } from "../../services/workout";
 import { h, svg, type Child } from "../dom";
-import { repsText, schemeText } from "../format";
+import { schemeText } from "../format";
 import { ICONS } from "../icons";
-import { makeSortable, moveItem, swipeToDelete } from "./gestures";
+import { makeSortable, moveItem, onHold, swipeToDelete } from "./gestures";
 import { confirmDelete } from "./layout";
 import { numberInput } from "./forms";
 import { dragHandle } from "./list";
-import { actionSheet, confirmDialog } from "./popups";
+import { actionSheet, confirmDialog, scopeSheet } from "./popups";
 import { weightInput } from "./stepper";
 
 export interface CardHost {
@@ -17,8 +17,12 @@ export interface CardHost {
   step: number;
   previous(logged: LoggedExercise, set: LoggedSet): LoggedSet | undefined;
   onSetDone(logged: LoggedExercise): void;
-  /** Drops the exercise from the workout data; the card removes its own element. */
-  remove(logged: LoggedExercise): void;
+  /** The saved exercise that permanent set changes go to; undefined once it was deleted from the exercise list. */
+  exercise(logged: LoggedExercise): Exercise | undefined;
+  /** Name of the plan day the exercise can be removed from permanently; undefined when the day no longer has it. */
+  planDay(logged: LoggedExercise): string | undefined;
+  /** Drops the exercise from the workout data, and from the plan day too when `permanent`; the card removes its own element. */
+  remove(logged: LoggedExercise, permanent: boolean): void;
   /** Every exercise of the logged exercise's group, itself included. */
   alternatives(logged: LoggedExercise): Exercise[];
   /** Puts a fresh entry for another exercise of the group in place of `logged` and returns it. */
@@ -26,8 +30,11 @@ export interface CardHost {
   save(): void;
 }
 
-const COLLAPSE_DELAY_MS = 500;
+/** Long enough to tap the last circle down to the reps actually done before the card folds away. */
+const COLLAPSE_DELAY_MS = 4000;
 const FOLD_MS = 220;
+/** Long, so a set isn't reset by a hold meant as a tap; the number erases over the same time. */
+export const RESET_HOLD_MS = 3000;
 const FLIP_MS = 260;
 /** The title turns like a drum rolling toward the viewer: the old one goes down and away, the next one comes over the top. */
 const FLIP_OUT = "perspective(400px) translateY(60%) rotateX(-90deg)";
@@ -44,6 +51,7 @@ export class ExerciseCard {
   private readonly head = h("span", { className: "card-head" }, this.title, this.detail);
   private readonly summary: HTMLElement;
   private body: HTMLElement = h("div");
+  private collapseTimer: number | undefined;
 
   constructor(
     private logged: LoggedExercise,
@@ -84,26 +92,21 @@ export class ExerciseCard {
     return this.host.mode === "fixed" ? this.fixedBody() : this.perSetBody();
   }
 
+  /** Same weight cards leave the header to the title: the body already shows the weight and every set. */
   private updateDetail(): void {
-    const { sets, bodyweight } = this.logged;
-    const first = sets[0];
-    if (this.host.mode === "fixed") {
-      const load = bodyweight || !first ? "" : ` · ${formatWeight(first.weight)} ${this.host.unit}`;
-      const reps = first?.minReps === undefined ? String(first?.targetReps ?? 0) : repsText(first.minReps, first.targetReps);
-      this.detail.textContent = `${sets.length}×${reps}${load}`;
-    } else {
-      this.detail.textContent = `${sets.length} ${sets.length === 1 ? "set" : "sets"}`;
-    }
+    if (this.host.mode === "fixed") return;
+    const count = this.logged.sets.length;
+    this.detail.textContent = `${count} ${count === 1 ? "set" : "sets"}`;
   }
 
-  /** Called after any change to a set's state; collapses the card once the last set is done. */
+  /** Called after any change to a set's state; collapses the card a while after the last change that leaves every set done. */
   private changed(becameDone: boolean): void {
     this.host.save();
     if (becameDone) this.host.onSetDone(this.logged);
     const complete = isComplete(this.logged);
-    const wasComplete = this.element.classList.contains("complete");
     this.element.classList.toggle("complete", complete);
-    if (complete && !wasComplete) setTimeout(() => (this.element.open = false), COLLAPSE_DELAY_MS);
+    window.clearTimeout(this.collapseTimer);
+    if (complete) this.collapseTimer = window.setTimeout(() => (this.element.open = false), COLLAPSE_DELAY_MS);
   }
 
   /** Same weight style: one weight, tap circles to log reps. */
@@ -111,12 +114,17 @@ export class ExerciseCard {
     const { logged, host } = this;
     const circles = logged.sets.map((set) => {
       const prev = h("span", { className: "set-prev" });
-      const circle = h("button", { type: "button", className: "circle", title: "Tap to log reps; tap again for one rep less" });
+      const circle = h("button", { type: "button", className: "circle", title: "Tap to log reps; tap again for one rep less; hold to reset" });
       const paint = (): void => {
-        circle.textContent = String(set.reps);
+        circle.replaceChildren(h("span", { className: "circle-reps" }, set.reps));
         circle.className = `circle ${set.done ? repsClass(set) : "todo"}`;
         this.paintHint(prev, set);
       };
+      onHold(circle, () => {
+        resetSet(set);
+        paint();
+        this.changed(false);
+      }, RESET_HOLD_MS);
       circle.addEventListener("click", () => {
         const wasDone = set.done;
         cycleReps(set);
@@ -131,20 +139,25 @@ export class ExerciseCard {
       ? null
       : h(
           "div",
-          { className: "card-row", title: "Working weight for all sets" },
-          h("span", {}, "Weight"),
+          { className: "card-weight", title: "Working weight for all sets" },
           weightInput(logged.sets[0]?.weight ?? 0, host.step, host.unit, (value) => {
             for (const set of logged.sets) set.weight = value;
-            this.updateDetail();
             circles.forEach((c) => c.paint());
             host.save();
           }),
         );
+    const addCircle = h("button", { type: "button", className: "circle circle-add", title: "Add a set", ariaLabel: "Add set", onclick: () => this.addSet() }, svg(ICONS.plus));
     const removeLast =
       logged.sets.length > 0
         ? h("button", { type: "button", className: "chip", title: "Remove the last set from this workout", onclick: () => this.removeSet(logged.sets.length - 1) }, svg(ICONS.minus), "Set")
         : null;
-    return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), this.actions(removeLast));
+    return h(
+      "div",
+      { className: "card-body" },
+      weightRow,
+      h("div", { className: "circles" }, ...circles.map((c) => c.cell), h("div", { className: "set-cell" }, addCircle)),
+      this.actions(removeLast),
+    );
   }
 
   /** Weight per set style: a table of sets with last time's result, plain number cells and a done checkbox. */
@@ -213,16 +226,16 @@ export class ExerciseCard {
       host.save();
       this.refresh();
     });
-    return h("div", { className: "card-body" }, list, this.actions());
+    const addSet = h("button", { type: "button", className: "chip", title: "Add a set to this workout", onclick: () => this.addSet() }, svg(ICONS.plus), "Set");
+    return h("div", { className: "card-body" }, list, this.actions(addSet));
   }
 
-  /** Add set, optional extra buttons and remove exercise, in one row at the bottom of the card. */
-  private actions(...extra: Child[]): HTMLElement {
+  /** Set buttons on the left and remove exercise on the right, in one row at the bottom of the card. */
+  private actions(...buttons: Child[]): HTMLElement {
     return h(
       "div",
       { className: "card-actions" },
-      h("button", { type: "button", className: "chip", title: "Add a set to this workout", onclick: () => this.addSet() }, svg(ICONS.plus), "Set"),
-      ...extra,
+      ...buttons,
       h(
         "button",
         { type: "button", className: "chip chip-danger", title: "Remove this exercise from this workout", ariaLabel: "Remove exercise", onclick: () => this.remove() },
@@ -232,24 +245,41 @@ export class ExerciseCard {
   }
 
   private addSet(): void {
-    addSet(this.logged);
-    this.host.save();
-    this.refresh();
+    const { logged, host } = this;
+    const exercise = host.exercise(logged);
+    const add = (permanent: boolean): void => {
+      if (permanent && exercise) addPlannedSet(logged, exercise, host.mode);
+      else addSet(logged);
+      host.save();
+      this.refresh();
+    };
+    if (!exercise) return add(false);
+    scopeSheet("Add a set", `Future ${exercise.name} workouts get it too`, add);
   }
 
+  /** A set added during this workout isn't planned, so it can only be deleted from this workout. */
   private removeSet(index: number): void {
-    confirmDelete(`set ${index + 1} from this workout`, () => {
-      this.logged.sets.splice(index, 1);
-      this.host.save();
+    const { logged, host } = this;
+    const exercise = host.exercise(logged);
+    const remove = (permanent: boolean): void => {
+      if (permanent && exercise) removePlannedSet(logged, index, exercise, host.mode);
+      else logged.sets.splice(index, 1);
+      host.save();
       this.refresh();
-    });
+    };
+    if (!exercise || logged.sets[index]?.planIndex === null) return confirmDelete(`set ${index + 1} from this workout`, () => remove(false));
+    scopeSheet(`Delete set ${index + 1}?`, `Future ${exercise.name} workouts won't have it either`, remove, true);
   }
 
   private remove(): void {
-    confirmDelete(`${this.logged.name} from this workout`, () => {
-      this.host.remove(this.logged);
+    const { logged, host } = this;
+    const remove = (permanent: boolean): void => {
+      host.remove(logged, permanent);
       this.element.remove();
-    });
+    };
+    const day = host.planDay(logged);
+    if (!day) return confirmDelete(`${logged.name} from this workout`, () => remove(false));
+    scopeSheet(`Delete ${logged.name}?`, `Also removes it from ${day}`, remove, true);
   }
 
   /** Swaps right away when the group has one other exercise, otherwise asks which one. */

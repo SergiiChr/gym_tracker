@@ -1,6 +1,7 @@
 import { migrate, withDefaults } from "../model/migrate";
 import { presetData } from "../model/presets";
 import type { AppData, Exercise, Plan } from "../model/types";
+import { log } from "./log";
 
 const STORAGE_KEY = "gym-tracker";
 
@@ -29,8 +30,8 @@ export function browserStorage(): KeyValueStorage {
     localStorage.setItem(`${STORAGE_KEY}-probe`, "1");
     localStorage.removeItem(`${STORAGE_KEY}-probe`);
     return localStorage;
-  } catch {
-    console.warn("localStorage is unavailable, data will not persist");
+  } catch (error) {
+    log.warn("localStorage is unavailable, data will not persist", error);
     return new MemoryStorage();
   }
 }
@@ -43,8 +44,13 @@ export class Store {
     this.data = this.load();
   }
 
+  /** A failed write (storage full or blocked) is logged and the data stays in memory; the next save tries again. */
   save(): void {
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    try {
+      this.storage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    } catch (error) {
+      log.error("Couldn't save data", error);
+    }
   }
 
   exercise(id: string): Exercise | undefined {
@@ -98,9 +104,9 @@ export class Store {
     if (!raw) return presetData();
     try {
       return withDefaults(migrate(JSON.parse(raw) as AppData));
-    } catch {
+    } catch (error) {
       // Not saved back right away, so the broken blob can still be recovered until the next change.
-      console.error("Stored data is corrupted, starting from presets");
+      log.error("Stored data is corrupted, starting from presets", error);
       return presetData();
     }
   }

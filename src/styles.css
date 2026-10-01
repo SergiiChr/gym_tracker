@@ -557,10 +557,10 @@ select.field-input {
 
 .card summary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 12px 14px;
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -573,7 +573,7 @@ select.field-input {
 
 .card-title {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .card summary .drag-handle {
@@ -587,20 +587,34 @@ select.field-input {
 }
 
 .card-body {
-  padding: 0 16px 14px;
+  padding: 0 14px 12px;
 }
 
-.card-row {
+.card-weight {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 12px;
 }
 
+/* Smaller than other steppers, in line with the scaled down card. */
+.card-weight .stepper {
+  height: 32px;
+}
+
+.card-weight .stepper-button {
+  width: 30px;
+}
+
+.card-weight .stepper-value {
+  width: 3em;
+  font-size: 15px;
+}
+
+/* Sized so five sets and the + circle fit one row on a phone. */
 .circles {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .set-cell {
@@ -611,19 +625,47 @@ select.field-input {
 }
 
 .circle {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 0;
   background: var(--fill);
   color: var(--muted);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   transition: transform 0.1s;
 }
 
 .circle:active {
   transform: scale(0.92);
+}
+
+.circle-add {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--fill);
+  color: var(--text);
+}
+
+.circle-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+/*
+ * Holding a logged set resets it; its number erases top to bottom until then.
+ * A transition rather than an animation, so letting go early draws the number back from where it got to, at the same speed.
+ * Both ends are insets: from no clip-path it would jump halfway instead of easing.
+ */
+.circle-reps {
+  display: inline-block;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--hold-ms) linear;
+}
+
+.circle:not(.todo).holding .circle-reps {
+  clip-path: inset(100% 0 0 0);
 }
 
 .circle.done {
@@ -638,7 +680,7 @@ select.field-input {
 }
 
 .set-prev {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   min-height: 1em;
 }
@@ -839,19 +881,19 @@ select.field-input {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 34px;
-  padding: 0 14px 0 10px;
+  height: 30px;
+  padding: 0 12px 0 8px;
   border: 0;
-  border-radius: 17px;
+  border-radius: 15px;
   background: var(--fill);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -866,7 +908,7 @@ select.field-input {
 
 .chip-danger {
   margin-left: auto;
-  width: 34px;
+  width: 30px;
   padding: 0;
   justify-content: center;
   background: var(--red-tint);

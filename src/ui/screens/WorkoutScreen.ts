@@ -7,7 +7,7 @@ import { exercisePicker } from "../components/exercisePicker";
 import { makeSortable, moveItem } from "../components/gestures";
 import { emptyState, fab, page } from "../components/layout";
 import { actionRow, group } from "../components/list";
-import { actionSheet, confirmDialog } from "../components/popups";
+import { actionSheet, confirmDialog, scopeSheet } from "../components/popups";
 import { RestTimer } from "../components/RestTimer";
 import { h } from "../dom";
 import { ICONS } from "../icons";
@@ -42,8 +42,16 @@ export class WorkoutScreen implements Screen {
       step: store.data.settings.increment.step,
       previous: (logged, set) => previousSet(store.data, logged.exerciseId, workout.mode, set.planIndex),
       onSetDone: (logged) => this.startRest(logged),
-      remove: (logged) => {
+      exercise: (logged) => store.exercise(logged.exerciseId),
+      planDay: (logged) => {
+        const day = this.planDay(workout);
+        return day?.slots.some((slot) => slot.includes(logged.exerciseId)) ? day.name : undefined;
+      },
+      remove: (logged, permanent) => {
         workout.exercises = workout.exercises.filter((e) => e !== logged);
+        const day = this.planDay(workout);
+        // The card stands for the whole slot, so a group goes with the exercise picked from it.
+        if (permanent && day) day.slots = day.slots.filter((slot) => !slot.includes(logged.exerciseId));
         store.save();
       },
       alternatives: (logged) => (logged.group ?? []).flatMap((id) => store.exercise(id) ?? []),
@@ -79,35 +87,44 @@ export class WorkoutScreen implements Screen {
   private pickExercise(workout: WorkoutLog, host: CardHost): void {
     const { store } = this.app;
     const inWorkout = new Set(workout.exercises.map((e) => e.exerciseId));
-    const add = (exercise: Exercise): void => {
+    const add = (exercise: Exercise, permanent: boolean): void => {
       const logged = logExercise(exercise, workout.mode);
       workout.exercises.push(logged);
+      if (permanent) this.planDay(workout)?.slots.push([exercise.id]);
       store.save();
       const card = new ExerciseCard(logged, host).element;
       this.cards.append(card);
       card.scrollIntoView({ behavior: "smooth", block: "center" });
-      this.askToSavePlan(workout, `Add ${exercise.name} to plan too?`, "Add", (day) => {
-        if (!day.slots.some((slot) => slot.includes(exercise.id))) day.slots.push([exercise.id]);
-      });
+    };
+    /** Only asks when the plan day exists and doesn't have the exercise yet. */
+    const choose = (exercise: Exercise): void => {
+      const day = this.planDay(workout);
+      if (!day || day.slots.some((slot) => slot.includes(exercise.id))) return add(exercise, false);
+      scopeSheet(`Add ${exercise.name}`, `Also adds it to ${day.name}`, (permanent) => add(exercise, permanent));
     };
     exercisePicker(
       store.data.exercises.filter((e) => !inWorkout.has(e.id)),
       workout.mode,
       store.data.settings.unit,
-      add,
+      choose,
       (name) => {
         // A brand new exercise always goes to the exercise list, whatever is chosen for the plan.
         const exercise = newExercise(store.data.settings, name);
         store.data.exercises.push(exercise);
-        add(exercise);
+        choose(exercise);
       },
     );
+  }
+
+  /** The plan day the workout came from, unless it was deleted since. */
+  private planDay(workout: WorkoutLog): PlanDay | undefined {
+    return this.app.store.plan(workout.planId)?.days.find((d) => d.id === workout.dayId);
   }
 
   /** Changes already apply to this workout; offers to copy them to the plan day the workout came from. */
   private askToSavePlan(workout: WorkoutLog, question: string, action: string, update: (day: PlanDay) => void): void {
     const { store } = this.app;
-    const day = store.plan(workout.planId)?.days.find((d) => d.id === workout.dayId);
+    const day = this.planDay(workout);
     if (!day) return;
     confirmDialog({
       title: question,

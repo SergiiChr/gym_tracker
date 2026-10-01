@@ -1,11 +1,14 @@
 import { addPresets, emptyData } from "../../model/presets";
 import type { Unit } from "../../model/types";
 import { convertData, formatWeight, STEP_OPTIONS } from "../../model/units";
+import { log } from "../../services/log";
 import type { App } from "../App";
 import { confirmDialog } from "../components/popups";
 import { numberRow, segmentedRow, selectRow, toggleRow } from "../components/forms";
 import { deleteButton, page, toast } from "../components/layout";
 import { actionRow, group, row } from "../components/list";
+import { downloadFile } from "../dom";
+import { ICONS } from "../icons";
 import type { Screen } from "../Router";
 
 export class SettingsScreen implements Screen {
@@ -69,6 +72,17 @@ export class SettingsScreen implements Screen {
       ),
       group(null, [row({ title: "Backup & restore", href: "/settings/backup", tip: "Export or import all data as a JSON file" })]),
       group(
+        "Troubleshooting",
+        [
+          actionRow("Export error log", "Download recent errors and warnings as a text file", () => exportLog(), ICONS.download),
+          actionRow("Clear error log", "Delete all logged errors and warnings", () => {
+            log.clear();
+            this.app.router.render();
+          }, ICONS.trash),
+        ],
+        `${log.size} ${log.size === 1 ? "entry" : "entries"} logged. Attach the file when reporting a problem.`,
+      ),
+      group(
         "Data",
         [
           actionRow("Add preset plans", "Add the 5×5 A/B and HIT 4-day split plans with their exercises", () => {
@@ -93,4 +107,10 @@ export class SettingsScreen implements Screen {
       ),
     );
   }
+}
+
+function exportLog(): void {
+  const now = new Date().toISOString();
+  const header = `Gym tracker error log, exported ${now}\n${navigator.userAgent}\n\n`;
+  downloadFile(`gym-tracker-log-${now.slice(0, 10)}.txt`, header + (log.text() || "No errors logged."), "text/plain");
 }
