@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newExercise } from "../src/model/presets";
-import { addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet, swapExercise } from "../src/services/workout";
+import { addPlannedSet, addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet, removePlannedSet, resetSet, swapExercise } from "../src/services/workout";
 import { sampleData } from "./helpers";
 
 describe("workout", () => {
@@ -67,6 +67,27 @@ describe("workout", () => {
     expect(workout.exercises[0]?.sets.at(-1)?.planIndex).toBeNull();
   });
 
+  it("adds a set permanently to the exercise's planned sets", () => {
+    const { data, plan, bench } = sampleData();
+    bench.schemes.fixed = [{ reps: 6, maxReps: 10, weight: 60 }];
+    const logged = createWorkout(data, plan, plan.days[0]!).exercises[1]!;
+    addPlannedSet(logged, bench, "fixed");
+    expect(bench.schemes.fixed).toEqual([{ reps: 6, maxReps: 10, weight: 60 }, { reps: 6, maxReps: 10, weight: 60 }]);
+    expect(logged.sets.map((s) => s.planIndex)).toEqual([0, 1]);
+  });
+
+  it("removes a set permanently and moves later planned sets up", () => {
+    const { data, plan, squat } = sampleData();
+    squat.schemes.fixed.forEach((spec, i) => (spec.weight = i));
+    const logged = createWorkout(data, plan, plan.days[0]!).exercises[0]!;
+    addSet(logged);
+    removePlannedSet(logged, 1, squat, "fixed");
+    expect(squat.schemes.fixed.map((s) => s.weight)).toEqual([0, 2, 3, 4]);
+    expect(logged.sets.map((s) => s.planIndex)).toEqual([0, 1, 2, 3, null]);
+    removePlannedSet(logged, 4, squat, "fixed");
+    expect(squat.schemes.fixed).toHaveLength(4);
+  });
+
   it("finds the previous result for the same planned set", () => {
     const { data, plan, squat } = sampleData();
     const workout = createWorkout(data, plan, plan.days[0]!);
@@ -81,6 +102,10 @@ describe("workout", () => {
     const set = { targetReps: 2, reps: 2, weight: 0, done: false, planIndex: 0 };
     const seen = Array.from({ length: 4 }, () => (cycleReps(set), set.done ? set.reps : "-"));
     expect(seen).toEqual([2, 1, 0, "-"]);
+    cycleReps(set);
+    cycleReps(set);
+    resetSet(set);
+    expect(set).toMatchObject({ done: false, reps: 2 });
   });
 
   it("reports an exercise complete once every set is done", () => {

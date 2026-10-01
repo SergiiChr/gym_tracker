@@ -1,0 +1,64 @@
+const STORAGE_KEY = "gym-tracker-log";
+const MAX_ENTRIES = 300;
+
+type Level = "error" | "warn";
+
+/**
+ * Keeps the latest errors and warnings across reloads, so they can be exported from settings.
+ * Storage failures are ignored: logging must never break the app, and entries still live in memory.
+ */
+class Log {
+  private entries: string[] = load();
+
+  error(message: string, cause?: unknown): void {
+    this.add("error", message, cause);
+  }
+
+  warn(message: string, cause?: unknown): void {
+    this.add("warn", message, cause);
+  }
+
+  get size(): number {
+    return this.entries.length;
+  }
+
+  text(): string {
+    return this.entries.join("\n");
+  }
+
+  clear(): void {
+    this.entries = [];
+    persist(this.entries);
+  }
+
+  private add(level: Level, message: string, cause: unknown): void {
+    console[level](message, cause ?? "");
+    this.entries = [...this.entries, `${new Date().toISOString()} ${level.toUpperCase()} ${message}${describe(cause)}`].slice(-MAX_ENTRIES);
+    persist(this.entries);
+  }
+}
+
+/** Safari's stack has no message line, so the message is always written first. */
+function describe(cause: unknown): string {
+  if (cause === undefined) return "";
+  if (!(cause instanceof Error)) return `: ${String(cause)}`;
+  return `: ${cause.name}: ${cause.message}${cause.stack ? `\n${cause.stack}` : ""}`;
+}
+
+function load(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
+function persist(entries: string[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    // Storage is blocked or full; entries stay in memory for this page load.
+  }
+}
+
+export const log = new Log();

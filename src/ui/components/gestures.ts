@@ -2,6 +2,8 @@ import { h } from "../dom";
 
 const DELETE_WIDTH = 88;
 const MOVE_THRESHOLD = 8;
+/** How long a press must be held to count as a hold rather than a tap. */
+export const HOLD_MS = 550;
 
 /**
  * iOS-style swipe left to reveal a Delete button.
@@ -66,6 +68,38 @@ export function swipeToDelete(row: HTMLLIElement, onDelete: () => void, label = 
     true,
   );
   return row;
+}
+
+/**
+ * Runs `action` when the element is pressed and held without moving.
+ * Call it before adding the element's click listener: the click that follows the release is swallowed.
+ * Touch tooltips skip elements marked with `data-hold`, since holding them does something else.
+ */
+export function onHold(el: HTMLElement, action: () => void): void {
+  let timer: number | undefined;
+  let held = false;
+  let startX = 0;
+  let startY = 0;
+  const cancel = (): void => window.clearTimeout(timer);
+  el.dataset.hold = "";
+  el.addEventListener("pointerdown", (e) => {
+    held = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    timer = window.setTimeout(() => {
+      held = true;
+      action();
+    }, HOLD_MS);
+  });
+  el.addEventListener("pointermove", (e) => Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_THRESHOLD && cancel());
+  el.addEventListener("pointerup", cancel);
+  el.addEventListener("pointercancel", cancel);
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
+  el.addEventListener("click", (e) => {
+    if (!held) return;
+    held = false;
+    e.stopImmediatePropagation();
+  });
 }
 
 /**

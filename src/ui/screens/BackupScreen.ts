@@ -1,9 +1,10 @@
 import { MINIMAL_BACKUP } from "../../model/backupExample";
+import { log } from "../../services/log";
 import type { App } from "../App";
 import { confirmDialog } from "../components/popups";
 import { page, toast } from "../components/layout";
 import { actionRow, group } from "../components/list";
-import { h } from "../dom";
+import { downloadFile, h } from "../dom";
 import { ICONS } from "../icons";
 import type { Screen } from "../Router";
 
@@ -51,10 +52,7 @@ export class BackupScreen implements Screen {
   }
 
   private exportData(): void {
-    const blob = new Blob([this.app.store.exportJson()], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    h("a", { href: url, download: `gym-tracker-${new Date().toISOString().slice(0, 10)}.json` }).click();
-    URL.revokeObjectURL(url);
+    downloadFile(`gym-tracker-${new Date().toISOString().slice(0, 10)}.json`, this.app.store.exportJson(), "application/json");
   }
 
   private importData(): void {
@@ -73,7 +71,8 @@ export class BackupScreen implements Screen {
             this.app.store.importJson(json);
             this.app.commit();
             toast("Backup imported");
-          } catch {
+          } catch (error) {
+            log.error("Backup import failed", error);
             toast("This file is not a gym tracker backup. Nothing was changed.");
           }
         },
@@ -85,7 +84,10 @@ export class BackupScreen implements Screen {
   private copyExample(): void {
     navigator.clipboard.writeText(MINIMAL_BACKUP).then(
       () => toast("Example copied"),
-      () => toast("Couldn't copy. Select the example text instead."),
+      (error: unknown) => {
+        log.warn("Couldn't copy the backup example", error);
+        toast("Couldn't copy. Select the example text instead.");
+      },
     );
   }
 }

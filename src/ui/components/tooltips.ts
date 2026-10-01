@@ -1,10 +1,9 @@
+import { HOLD_MS } from "./gestures";
 import { toast } from "./layout";
-
-const HOLD_MS = 550;
 
 /**
  * Desktop gets tooltips from the native `title` attribute on hover.
- * On touch screens, holding any element with a `title` shows it as a toast instead.
+ * On touch screens, holding any element with a `title` shows it as a toast instead, unless holding it already does something (`data-hold`).
  */
 export function installTouchTooltips(): void {
   let timer: number | undefined;
@@ -15,7 +14,7 @@ export function installTouchTooltips(): void {
 
   document.addEventListener("pointerdown", (e) => {
     shown = false;
-    if (e.pointerType === "mouse") return;
+    if (e.pointerType === "mouse" || (e.target as Element).closest("[data-hold]")) return;
     const tip = (e.target as Element).closest<HTMLElement>("[title]")?.title;
     if (!tip) return;
     startX = e.clientX;

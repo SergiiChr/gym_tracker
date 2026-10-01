@@ -27,3 +27,10 @@ export function svg(markup: string): Element {
 export function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+/** Saves text as a file through a temporary download link. */
+export function downloadFile(name: string, text: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  h("a", { href: url, download: name }).click();
+  URL.revokeObjectURL(url);
+}

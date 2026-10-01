@@ -148,3 +148,11 @@ export function confirmDialog(options: ConfirmOptions): void {
     ),
   );
 }
+
+/** Asks whether a change made mid-workout applies to this workout only or also to what later workouts start from. */
+export function scopeSheet(title: string, permanentNote: string, onSelect: (permanent: boolean) => void, destructive = false): void {
+  actionSheet(title, [
+    { label: "This workout only", destructive, onSelect: () => onSelect(false) },
+    { label: "Permanently", subtitle: permanentNote, destructive, onSelect: () => onSelect(true) },
+  ]);
+}
