@@ -9,7 +9,7 @@ import { confirmDelete } from "./layout";
 import { numberInput } from "./forms";
 import { dragHandle } from "./list";
 import { actionSheet, confirmDialog, scopeSheet } from "./popups";
-import { weightInput } from "./stepper";
+import { stepper } from "./stepper";
 
 export interface CardHost {
   mode: PlanMode;
@@ -138,24 +138,37 @@ export class ExerciseCard {
       return { cell: h("div", { className: "set-cell" }, circle, prev), paint };
     });
 
+    // The unit is left out: the card header already shows the weight with it.
     const weightRow = logged.bodyweight
       ? null
       : h(
           "div",
-          { className: "card-row", title: "Working weight for all sets" },
-          h("span", { className: "card-row-label" }, "Weight"),
-          weightInput(logged.sets[0]?.weight ?? 0, host.step, host.unit, (value) => {
-            for (const set of logged.sets) set.weight = value;
-            this.updateDetail();
-            circles.forEach((c) => c.paint());
-            host.save();
+          { className: "card-weight", title: "Working weight for all sets" },
+          stepper({
+            value: logged.sets[0]?.weight ?? 0,
+            step: host.step,
+            decimal: true,
+            label: `Weight in ${host.unit}`,
+            onChange: (value) => {
+              for (const set of logged.sets) set.weight = value;
+              this.updateDetail();
+              circles.forEach((c) => c.paint());
+              host.save();
+            },
           }),
         );
+    const addCircle = h("button", { type: "button", className: "circle circle-add", title: "Add a set", ariaLabel: "Add set", onclick: () => this.addSet() }, svg(ICONS.plus));
     const removeLast =
       logged.sets.length > 0
         ? h("button", { type: "button", className: "chip", title: "Remove the last set from this workout", onclick: () => this.removeSet(logged.sets.length - 1) }, svg(ICONS.minus), "Set")
         : null;
-    return h("div", { className: "card-body" }, weightRow, h("div", { className: "circles" }, ...circles.map((c) => c.cell)), this.actions(removeLast));
+    return h(
+      "div",
+      { className: "card-body" },
+      weightRow,
+      h("div", { className: "circles" }, ...circles.map((c) => c.cell), h("div", { className: "set-cell" }, addCircle)),
+      this.actions(removeLast),
+    );
   }
 
   /** Weight per set style: a table of sets with last time's result, plain number cells and a done checkbox. */
@@ -224,16 +237,16 @@ export class ExerciseCard {
       host.save();
       this.refresh();
     });
-    return h("div", { className: "card-body" }, list, this.actions());
+    const addSet = h("button", { type: "button", className: "chip", title: "Add a set to this workout", onclick: () => this.addSet() }, svg(ICONS.plus), "Set");
+    return h("div", { className: "card-body" }, list, this.actions(addSet));
   }
 
-  /** Add set, optional extra buttons and remove exercise, in one row at the bottom of the card. */
-  private actions(...extra: Child[]): HTMLElement {
+  /** Set buttons on the left and remove exercise on the right, in one row at the bottom of the card. */
+  private actions(...buttons: Child[]): HTMLElement {
     return h(
       "div",
       { className: "card-actions" },
-      h("button", { type: "button", className: "chip", title: "Add a set to this workout", onclick: () => this.addSet() }, svg(ICONS.plus), "Set"),
-      ...extra,
+      ...buttons,
       h(
         "button",
         { type: "button", className: "chip chip-danger", title: "Remove this exercise from this workout", ariaLabel: "Remove exercise", onclick: () => this.remove() },
