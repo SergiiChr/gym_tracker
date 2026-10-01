@@ -653,19 +653,19 @@ select.field-input {
   height: 18px;
 }
 
-/* Holding a logged set resets it; its number erases top to bottom until then. */
+/*
+ * Holding a logged set resets it; its number erases top to bottom until then.
+ * A transition rather than an animation, so letting go early draws the number back from where it got to, at the same speed.
+ * Both ends are insets: from no clip-path it would jump halfway instead of easing.
+ */
 .circle-reps {
   display: inline-block;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--hold-ms) linear;
 }
 
 .circle:not(.todo).holding .circle-reps {
-  animation: erase var(--hold-ms) linear forwards;
-}
-
-/* Both ends are insets: from no clip-path it would jump halfway instead of easing. */
-@keyframes erase {
-  from { clip-path: inset(0 0 0 0); }
-  to { clip-path: inset(100% 0 0 0); }
+  clip-path: inset(100% 0 0 0);
 }
 
 .circle.done {
