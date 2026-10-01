@@ -1,6 +1,9 @@
 /* Native app look: grouped inset lists, system colors, light and dark mode. */
 :root {
   color-scheme: light dark;
+  --stepper-button: 34px;
+  /* Shared by the workout card's weight stepper and the weight in its header, which sits right above it. */
+  --card-weight-width: 54px;
   --bg: #f2f2f7;
   --cell: #ffffff;
   --cell-pressed: #e5e5ea;
@@ -488,7 +491,7 @@ select.field-input {
 .stepper-button {
   display: grid;
   place-items: center;
-  width: 34px;
+  width: var(--stepper-button);
   padding: 0;
   border: 0;
   background: none;
@@ -596,6 +599,29 @@ select.field-input {
   margin-bottom: 12px;
 }
 
+.card-weight .stepper-value {
+  width: var(--card-weight-width);
+}
+
+/* Moves the stepper left by the swap button and its gap, which push the header weight left too. */
+.card:has(.card-swap) .card-weight {
+  padding-right: 44px;
+}
+
+.card-detail-weight,
+.card-detail-unit {
+  display: inline-block;
+  text-align: center;
+}
+
+.card-detail-weight {
+  width: var(--card-weight-width);
+}
+
+.card-detail-unit {
+  width: var(--stepper-button);
+}
+
 .circles {
   display: flex;
   flex-wrap: wrap;
@@ -678,7 +704,7 @@ select.field-input {
 .card-head {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }

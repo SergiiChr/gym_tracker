@@ -94,9 +94,13 @@ export class ExerciseCard {
     const { sets, bodyweight } = this.logged;
     const first = sets[0];
     if (this.host.mode === "fixed") {
-      const load = bodyweight || !first ? "" : ` · ${formatWeight(first.weight)} ${this.host.unit}`;
       const reps = first?.minReps === undefined ? String(first?.targetReps ?? 0) : repsText(first.minReps, first.targetReps);
-      this.detail.textContent = `${sets.length}×${reps}${load}`;
+      // The weight and unit get boxes as wide as the stepper's number and + button, so the numbers line up.
+      const load =
+        bodyweight || !first
+          ? []
+          : [" · ", h("span", { className: "card-detail-weight" }, formatWeight(first.weight)), h("span", { className: "card-detail-unit" }, this.host.unit)];
+      this.detail.replaceChildren(`${sets.length}×${reps}`, ...load);
     } else {
       this.detail.textContent = `${sets.length} ${sets.length === 1 ? "set" : "sets"}`;
     }
