@@ -383,6 +383,8 @@ function following(el: Element): Element[] {
   return result;
 }
 
+/** Green at the target, yellow within a double progression range, red below it. */
 function repsClass(set: LoggedSet): string {
-  return set.reps >= set.targetReps ? "done" : "partial";
+  if (set.reps >= set.targetReps) return "done";
+  return set.minReps !== undefined && set.reps >= set.minReps ? "short" : "partial";
 }

@@ -13,6 +13,7 @@
   --green: #34c759;
   --red: #ff3b30;
   --orange: #ff9500;
+  --yellow: #ffcc00;
   --purple: #af52de;
   --gray: #8e8e93;
   --blue-tint: rgba(0, 122, 255, 0.12);
@@ -41,6 +42,7 @@
     --green: #30d158;
     --red: #ff453a;
     --orange: #ff9f0a;
+    --yellow: #ffd60a;
     --purple: #bf5af2;
     --blue-tint: rgba(10, 132, 255, 0.2);
     --red-tint: rgba(255, 69, 58, 0.2);
@@ -673,6 +675,11 @@ select.field-input {
   color: #fff;
 }
 
+.circle.short {
+  background: var(--yellow);
+  color: #000;
+}
+
 .circle.partial {
   background: transparent;
   box-shadow: inset 0 0 0 3px var(--red);
@@ -841,6 +848,12 @@ select.field-input {
 
 .num-cell.done {
   color: var(--green);
+  font-weight: 600;
+}
+
+.num-cell.short {
+  background: var(--yellow);
+  color: #000;
   font-weight: 600;
 }
 
@@ -1023,7 +1036,7 @@ select.field-input {
   left: max(20px, calc(50vw - 300px));
   bottom: calc(32px + env(safe-area-inset-bottom));
   z-index: 20;
-  border: 0;
+  border: 1px solid var(--separator);
   border-radius: 22px;
   padding: 12px 18px;
   background: var(--cell);

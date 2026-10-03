@@ -62,7 +62,7 @@ describe("Store", () => {
     storage.setItem("gym-tracker", JSON.stringify(v1));
     const store = new Store(storage);
     const squat = store.data.exercises.find((e) => e.name === "Squat")!;
-    expect(store.data.version).toBe(4);
+    expect(store.data.version).toBe(5);
     expect(squat.schemes.fixed).toEqual(squat.schemes.perSet);
     expect(squat.schemes.fixed).not.toBe(squat.schemes.perSet);
     expect("sets" in squat).toBe(false);
@@ -103,6 +103,22 @@ describe("Store", () => {
     storage.setItem("gym-tracker", JSON.stringify(v3));
     const day = new Store(storage).data.plans[0]?.days[0];
     expect(day).toEqual({ id: "d", name: "D", slots: [["a"], ["b"]] });
+  });
+
+  it("upgrades version 4 Full body exercises without rep ranges", () => {
+    const storage = new MemoryStorage();
+    const v4 = presetData();
+    v4.version = 4;
+    const ids = new Set(v4.plans.find((p) => p.name === "Full body A/B/C")!.days.flatMap((d) => d.slots.flat()));
+    const used = v4.exercises.filter((e) => ids.has(e.id));
+    const hackSquat = used.find((e) => e.name === "Hack Squat")!;
+    hackSquat.schemes.fixed = [{ reps: 5, weight: 80 }, { reps: 5, weight: 80 }];
+    const lateralRaise = used.find((e) => e.name === "Lateral Raise")!;
+    lateralRaise.schemes.fixed = [{ reps: 15, maxReps: 25, weight: 8 }];
+    storage.setItem("gym-tracker", JSON.stringify(v4));
+    const exercises = new Store(storage).data.exercises;
+    expect(exercises.find((e) => e.name === "Hack Squat")?.schemes.fixed).toEqual([{ reps: 6, maxReps: 10, weight: 80 }, { reps: 6, maxReps: 10, weight: 80 }]);
+    expect(exercises.find((e) => e.name === "Lateral Raise")?.schemes.fixed).toEqual([{ reps: 15, maxReps: 25, weight: 8 }]);
   });
 
   it("round-trips export and rejects foreign JSON", () => {

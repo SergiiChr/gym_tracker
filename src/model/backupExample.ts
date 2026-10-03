@@ -1,6 +1,6 @@
 /** Smallest backup that imports cleanly; shown on the Backup screen and covered by a test. */
 export const MINIMAL_BACKUP = `{
-  "version": 4,
+  "version": 5,
   "exercises": [{
     "id": "squat",
     "name": "Squat",
