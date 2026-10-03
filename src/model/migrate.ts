@@ -1,4 +1,4 @@
-import { bothModes, DATA_VERSION, emptyData, newId } from "./presets";
+import { bothModes, DATA_VERSION, emptyData, fullBodyPreset, newId } from "./presets";
 import type { AppData, Exercise, LoggedSet, Plan, PlanDay, SetSpec } from "./types";
 
 type ExerciseV1 = Omit<Exercise, "schemes"> & { schemes?: Exercise["schemes"]; sets?: SetSpec[] };
@@ -39,6 +39,24 @@ export function migrate(data: AppData): AppData {
       delete day.exerciseIds;
     }
     data.version = 4;
+  }
+  if (data.version === 4) {
+    // v5: Full body exercises that kept older plain sets get the preset's rep ranges.
+    // That happens when they were already used in another Same weight plan when the preset was added.
+    const preset = fullBodyPreset();
+    const ranges = new Map(preset.exercises.map((e) => [e.name.toLowerCase(), e.schemes.fixed[0]]));
+    const plans = data.plans.filter((p) => p.name === preset.plan.name);
+    const ids = new Set(plans.flatMap((p) => p.days.flatMap((d) => d.slots.flat())));
+    for (const exercise of data.exercises.filter((e) => ids.has(e.id))) {
+      const range = ranges.get(exercise.name.toLowerCase());
+      const sets = exercise.schemes?.fixed ?? [];
+      if (range?.maxReps === undefined || sets.some((s) => s.maxReps !== undefined)) continue;
+      for (const set of sets) {
+        set.reps = range.reps;
+        set.maxReps = range.maxReps;
+      }
+    }
+    data.version = 5;
   }
   return data;
 }

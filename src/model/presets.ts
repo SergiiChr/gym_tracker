@@ -2,7 +2,7 @@ import { MY_PRESET } from "./myPreset";
 import { convertWeight, DEFAULT_STEP } from "./units";
 import type { AppData, Exercise, Plan, PlanDay, PlanMode, SetSpec, Settings, Unit } from "./types";
 
-export const DATA_VERSION = 4;
+export const DATA_VERSION = 5;
 
 export function newId(): string {
   return crypto.randomUUID();
@@ -291,6 +291,11 @@ export function addPresets(data: AppData): void {
     data.plans.push(program.plan);
   }
   data.defaultPlanId ??= (data.plans.find((p) => p.id === fiveByFive.plan.id) ?? data.plans[0])?.id ?? null;
+}
+
+/** The Full body preset on its own, for its rep ranges; weights are in kg. */
+export function fullBodyPreset(): Program {
+  return new PresetBuilder("kg").fullBody();
 }
 
 export function presetData(): AppData {
