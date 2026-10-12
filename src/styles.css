@@ -1111,8 +1111,18 @@ select.field-input {
   height: 90dvh;
 }
 
+/* The search field takes focus as the sheet opens.
+   Sliding up would place it under the keyboard at that moment, and iOS then scrolls the page to reveal it, pushing the field off the top. */
+.sheet.tall[open] {
+  animation-name: sheet-fade-in;
+}
+
 @keyframes sheet-in {
   from { transform: translateY(100%); }
+}
+
+@keyframes sheet-fade-in {
+  from { opacity: 0; }
 }
 
 /* Grabber on top; the whole header is the drag area. */
