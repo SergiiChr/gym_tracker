@@ -720,6 +720,30 @@ select.field-input {
   min-width: 0;
 }
 
+/*
+ * Countdown runner between the title and the check, shown while every set is done.
+ * Taller than the text line, with negative margins so the header keeps its height when he appears.
+ */
+.card-runner {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  margin: -10px 0;
+  color: var(--text);
+  --finish-runner-hit: var(--red);
+  --finish-runner-done: var(--green);
+}
+
+.card.counting .card-runner {
+  display: block;
+}
+
+/* The title gives the free width to the runner while he runs. */
+.card.counting .card-head {
+  flex: 0 1 auto;
+}
+
 .card-swap {
   display: grid;
   place-items: center;

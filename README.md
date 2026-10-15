@@ -14,6 +14,7 @@ Runs fully in the browser; data is kept in `localStorage`, no backend and no run
 - Auto-increment with global rules and per-exercise overrides (step, target reps, last set only).
 - Double progression: sets have a rep range (like 3×6–10) and the weight goes up once every set reaches the top.
 - Exercise groups: alternatives that act as one exercise in a workout; swap between them with ⟳, only the one done is saved.
+- A card with every set done folds away after a 3 second countdown, shown as a stick figure running to a finish line; changing reps knocks him down and restarts it.
 - Rest timer, workout history with duration, kg/lbs, JSON backup export/import.
 - Presets: 5×5 A/B, HIT 4-day split and Full body A/B/C.
 - Tooltips on hover, or on long press on touch screens.
@@ -35,6 +36,7 @@ npm run build:single  # same, plus one self-contained file in dist-single/
 - `src/model` – data types, presets, unit conversion.
 - `src/services` – storage and workout/progression logic, no DOM access (unit tested).
 - `src/ui` – router, reusable components and one class per screen.
+- `src/vendor` – dropped-in packages with their own docs, like the `<finish-runner>` web component.
 - `tests` – unit tests.
 
 ## Hosting
