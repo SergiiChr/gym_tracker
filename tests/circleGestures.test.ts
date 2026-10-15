@@ -6,6 +6,9 @@ import { ExerciseCard, RESET_HOLD_MS as RESET_MS, type CardHost } from "../src/u
 import { HOLD_MS } from "../src/ui/components/gestures";
 import { sampleData } from "./helpers";
 
+// happy-dom has no canvas drawing, which the card's finish runner needs; a stand-in context swallows every call.
+Object.assign(HTMLCanvasElement.prototype, { getContext: () => new Proxy({}, { get: () => () => undefined }) });
+
 const host: CardHost = {
   mode: "fixed",
   unit: "kg",

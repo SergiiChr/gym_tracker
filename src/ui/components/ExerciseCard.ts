@@ -10,6 +10,7 @@ import { numberInput } from "./forms";
 import { dragHandle } from "./list";
 import { actionSheet, confirmDialog, scopeSheet } from "./popups";
 import { weightInput } from "./stepper";
+import "../../vendor/finish-runner/finish-runner.js";
 
 export interface CardHost {
   mode: PlanMode;
@@ -30,8 +31,10 @@ export interface CardHost {
   save(): void;
 }
 
-/** Long enough to tap the last circle down to the reps actually done before the card folds away. */
-const COLLAPSE_DELAY_MS = 4000;
+/** The runner's countdown once every set is done; long enough to tap the last circle down to the reps actually done. */
+const COUNTDOWN_MS = 3000;
+/** Lets him run through the line and cheer before the card folds away. */
+const CHEER_MS = 1000;
 const FOLD_MS = 220;
 /** Long, so a set isn't reset by a hold meant as a tap; the number erases over the same time. */
 export const RESET_HOLD_MS = 3000;
@@ -50,6 +53,8 @@ export class ExerciseCard {
   private readonly detail = h("span", { className: "card-detail" });
   private readonly head = h("span", { className: "card-head" }, this.title, this.detail);
   private readonly summary: HTMLElement;
+  /** Counts down in the header while every set is done; the card folds once he crosses the line. */
+  private readonly runner = h("finish-runner", { className: "card-runner", duration: COUNTDOWN_MS });
   private body: HTMLElement = h("div");
   private collapseTimer: number | undefined;
 
@@ -74,8 +79,9 @@ export class ExerciseCard {
             svg(ICONS.swap),
           )
         : null;
-    this.summary = h("summary", { title: "Tap to collapse or expand" }, dragHandle(), this.head, swap, h("span", { className: "card-check", title: "All sets done" }, svg(ICONS.check)));
+    this.summary = h("summary", { title: "Tap to collapse or expand" }, dragHandle(), this.head, this.runner, swap, h("span", { className: "card-check", title: "All sets done" }, svg(ICONS.check)));
     this.element = h("details", { className: "card", open: !isComplete(logged) }, this.summary, this.body);
+    this.runner.addEventListener("finish", () => (this.collapseTimer = window.setTimeout(() => this.close(), CHEER_MS)));
     this.refresh();
   }
 
@@ -85,7 +91,10 @@ export class ExerciseCard {
     this.body.replaceWith(body);
     this.body = body;
     this.updateDetail();
-    this.element.classList.toggle("complete", isComplete(this.logged));
+    const complete = isComplete(this.logged);
+    this.element.classList.toggle("complete", complete);
+    // Set changes never start the countdown on their own, but a set added to a complete card cancels it.
+    if (!complete) this.stopCountdown();
   }
 
   private buildBody(): HTMLElement {
@@ -99,14 +108,31 @@ export class ExerciseCard {
     this.detail.textContent = `${count} ${count === 1 ? "set" : "sets"}`;
   }
 
-  /** Called after any change to a set's state; collapses the card a while after the last change that leaves every set done. */
+  /**
+   * Called after any change to a set's state.
+   * Once every set is done the runner counts down to folding the card; a further change knocks him down and restarts it.
+   */
   private changed(becameDone: boolean): void {
     this.host.save();
     if (becameDone) this.host.onSetDone(this.logged);
     const complete = isComplete(this.logged);
     this.element.classList.toggle("complete", complete);
+    if (!complete) return this.stopCountdown();
     window.clearTimeout(this.collapseTimer);
-    if (complete) this.collapseTimer = window.setTimeout(() => (this.element.open = false), COLLAPSE_DELAY_MS);
+    this.element.classList.add("counting");
+    this.runner.reset(); // Starts fresh when he isn't running.
+  }
+
+  private stopCountdown(): void {
+    window.clearTimeout(this.collapseTimer);
+    this.element.classList.remove("counting");
+    this.runner.stop();
+  }
+
+  /** Folds the card away once the runner is through, unless it was closed by hand meanwhile. */
+  private close(): void {
+    this.stopCountdown();
+    if (this.element.open) void this.fold(false);
   }
 
   /** Same weight style: one weight, tap circles to log reps. */
@@ -185,7 +211,7 @@ export class ExerciseCard {
         onChange: (value) => {
           set.reps = value;
           paint();
-          host.save();
+          this.changed(false); // Reps changed on a done set restart the countdown.
         },
       });
       const weight = logged.bodyweight
@@ -275,6 +301,7 @@ export class ExerciseCard {
     const { logged, host } = this;
     const remove = (permanent: boolean): void => {
       host.remove(logged, permanent);
+      this.stopCountdown();
       this.element.remove();
     };
     const day = host.planDay(logged);
