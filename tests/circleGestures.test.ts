@@ -2,12 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LoggedSet } from "../src/model/types";
 import { createWorkout } from "../src/services/workout";
-import { ExerciseCard, RESET_HOLD_MS as RESET_MS, type CardHost } from "../src/ui/components/ExerciseCard";
+import { CHEER_MS, COUNTDOWN_MS, ExerciseCard, RESET_HOLD_MS as RESET_MS, type CardHost } from "../src/ui/components/ExerciseCard";
 import { HOLD_MS } from "../src/ui/components/gestures";
 import { sampleData } from "./helpers";
 
 // happy-dom has no canvas drawing, which the card's finish runner needs; a stand-in context swallows every call.
 Object.assign(HTMLCanvasElement.prototype, { getContext: () => new Proxy({}, { get: () => () => undefined }) });
+// Nor does it animate, which the card's fold waits for.
+Object.assign(Element.prototype, { animate: () => ({ finished: Promise.resolve() }) });
 
 const host: CardHost = {
   mode: "fixed",
@@ -24,12 +26,12 @@ const host: CardHost = {
 };
 
 /** A same weight card for Bench (one set of 5) with its only circle. */
-function setup(): { circle: HTMLButtonElement; set: LoggedSet } {
+function setup(): { card: HTMLDetailsElement; circle: HTMLButtonElement; set: LoggedSet } {
   const { data, plan } = sampleData();
   const logged = createWorkout(data, plan, plan.days[0]!).exercises[1]!;
-  const card = new ExerciseCard(logged, host);
-  document.body.replaceChildren(card.element);
-  return { circle: card.element.querySelector<HTMLButtonElement>(".circle:not(.circle-add)")!, set: logged.sets[0]! };
+  const card = new ExerciseCard(logged, host).element;
+  document.body.replaceChildren(card);
+  return { card, circle: card.querySelector<HTMLButtonElement>(".circle:not(.circle-add)")!, set: logged.sets[0]! };
 }
 
 /** Finger down, held for `ms`, then up; browsers fire the click after the release. */
@@ -116,5 +118,52 @@ describe("set circle taps and holds", () => {
     press(circle, RESET_MS / 2);
     circle.click();
     expect(state(set)).toBe("5");
+  });
+});
+
+describe("countdown once every set is done", () => {
+  beforeEach(() => void vi.useFakeTimers());
+  afterEach(() => void vi.useRealTimers());
+
+  /** Lets the fold's animations settle after the timers fired. */
+  const elapse = async (ms: number): Promise<void> => void (await vi.advanceTimersByTimeAsync(ms));
+
+  it("folds the card after the run and the cheer", async () => {
+    const { card, circle } = setup();
+    tap(circle);
+    expect(card.classList.contains("counting")).toBe(true);
+    await elapse(COUNTDOWN_MS + CHEER_MS - 1);
+    expect(card.open).toBe(true);
+    await elapse(1);
+    expect(card.open).toBe(false);
+    expect(card.classList.contains("counting")).toBe(false);
+  });
+
+  it("starts over when reps change during the countdown", async () => {
+    const { card, circle } = setup();
+    tap(circle);
+    await elapse(COUNTDOWN_MS / 2);
+    tap(circle);
+    await elapse(COUNTDOWN_MS + CHEER_MS - 1);
+    expect(card.open).toBe(true);
+    await elapse(1);
+    expect(card.open).toBe(false);
+  });
+
+  it("is called off when a set is undone", async () => {
+    const { card, circle } = setup();
+    tap(circle);
+    press(circle, RESET_MS);
+    expect(card.classList.contains("counting")).toBe(false);
+    await elapse(2 * (COUNTDOWN_MS + CHEER_MS));
+    expect(card.open).toBe(true);
+  });
+
+  it("keeps running when the card is moved in the page, like while another card is dragged past", async () => {
+    const { card, circle } = setup();
+    tap(circle);
+    document.body.append(card); // Re-inserts it, which disconnects and reconnects the runner.
+    await elapse(COUNTDOWN_MS + CHEER_MS);
+    expect(card.open).toBe(false);
   });
 });

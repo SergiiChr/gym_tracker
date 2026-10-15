@@ -35,7 +35,9 @@ In React or similar, render `<finish-runner>` and call the methods through a ref
 | `reset()` | Restarts the countdown with a knockdown. Same as `start()` when not running. Resetting again while he is down only moves the deadline. |
 | `stop()` | Cancels and clears. |
 | `running` | `true` while counting down. |
-| `finish` event | Fires at the deadline, also while scrolled out of view. |
+| `finish` event | Fires at the deadline, also while scrolled out of view or detached from the page. |
+
+Moving the element elsewhere in the page keeps the countdown going; only `stop()` ends it.
 
 ## Styling
 

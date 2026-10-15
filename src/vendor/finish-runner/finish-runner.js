@@ -384,12 +384,15 @@ export class FinishRunner extends HTMLElement {
     this.#calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
     this.#resize.observe(this);
     this.#view.observe(this);
+    this.#kick();
   }
 
+  /** Only pauses drawing: a countdown survives being moved in the page, and `stop()` ends it for good. */
   disconnectedCallback() {
     this.#resize.disconnect();
     this.#view.disconnect();
-    this.stop();
+    cancelAnimationFrame(this.#raf);
+    this.#raf = 0;
   }
 
   /** Countdown length in ms. */

@@ -32,9 +32,9 @@ export interface CardHost {
 }
 
 /** The runner's countdown once every set is done; long enough to tap the last circle down to the reps actually done. */
-const COUNTDOWN_MS = 3000;
+export const COUNTDOWN_MS = 3000;
 /** Lets him run through the line and cheer before the card folds away. */
-const CHEER_MS = 1000;
+export const CHEER_MS = 1000;
 const FOLD_MS = 220;
 /** Long, so a set isn't reset by a hold meant as a tap; the number erases over the same time. */
 export const RESET_HOLD_MS = 3000;
@@ -346,6 +346,7 @@ export class ExerciseCard {
    * The next sets are built before anything moves, so no frame mid-animation waits on that work.
    */
   private async swapTo(exercise: Exercise): Promise<void> {
+    this.stopCountdown(); // Or he could finish, and fold the card, in the middle of the swap.
     this.element.classList.add("swapping");
     this.logged = this.host.swap(this.logged, exercise);
     const body = this.buildBody();
