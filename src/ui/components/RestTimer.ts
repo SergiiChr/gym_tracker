@@ -1,6 +1,6 @@
 import { h } from "../dom";
 
-/** Countdown bar shown after a set is logged. Tapping it calls `onTap` and keeps the countdown going; once rest is over a tap hides it. */
+/** Countdown bar shown after a set is logged. A tap calls `onTap`; it hides the bar only once rest is over. */
 export class RestTimer {
   readonly element = h("button", { type: "button", className: "rest-timer hidden", title: "Rest timer. Tap to go to the next set" });
   private endsAt = 0;
