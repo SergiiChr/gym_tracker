@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newExercise } from "../src/model/presets";
-import { addPlannedSet, addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, previousSet, removePlannedSet, resetSet, swapExercise } from "../src/services/workout";
+import { addPlannedSet, addSet, applyOrderToDay, createWorkout, cycleReps, finishWorkout, hasUnfinishedSets, isComplete, logExercise, previousSet, removePlannedSet, resetSet, swapExercise } from "../src/services/workout";
 import { sampleData } from "./helpers";
 
 describe("workout", () => {
@@ -147,6 +147,22 @@ describe("workout", () => {
     workout.exercises.reverse();
     applyOrderToDay(workout, day);
     expect(day.slots).toEqual([[squat.id, legPress.id], [bench.id]]);
+  });
+
+  it("doesn't pick a group exercise that was only added to another workout", () => {
+    const { data, plan } = sampleData();
+    const hackSquat = { ...newExercise(data.settings), name: "Hack Squat" };
+    const legPress = { ...newExercise(data.settings), name: "Leg Press" };
+    data.exercises.push(hackSquat, legPress);
+    const [dayA, dayB] = plan.days;
+    dayB!.slots = [[hackSquat.id, legPress.id]];
+
+    const workout = createWorkout(data, plan, dayA!);
+    workout.exercises.push(logExercise(legPress, plan.mode));
+    for (const logged of workout.exercises) for (const set of logged.sets) set.done = true;
+    finishWorkout(data, workout);
+
+    expect(createWorkout(data, plan, dayB!).exercises.map((e) => e.name)).toEqual(["Hack Squat"]);
   });
 
   it("starts double progression sets at the top of the range", () => {

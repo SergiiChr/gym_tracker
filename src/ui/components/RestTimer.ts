@@ -1,15 +1,15 @@
 import { h } from "../dom";
 
-/** Countdown bar shown after a set is logged. Tapping it dismisses it and calls `onDismiss`. */
+/** Countdown bar shown after a set is logged. Tapping it calls `onTap` and keeps the countdown going; once rest is over a tap hides it. */
 export class RestTimer {
   readonly element = h("button", { type: "button", className: "rest-timer hidden", title: "Rest timer. Tap to go to the next set" });
   private endsAt = 0;
   private interval: number | undefined;
 
-  constructor(onDismiss: () => void) {
+  constructor(onTap: () => void) {
     this.element.addEventListener("click", () => {
-      this.stop();
-      onDismiss();
+      if (this.element.classList.contains("done")) this.stop();
+      onTap();
     });
   }
 
