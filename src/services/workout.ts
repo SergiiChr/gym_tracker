@@ -20,10 +20,13 @@ export function logExercise(exercise: Exercise, mode: PlanMode): LoggedExercise 
   };
 }
 
-/** The exercise of a group done in the latest workout, or the group's first one. */
+/**
+ * The exercise of a group done in the latest workout, or the group's first one.
+ * Only entries picked from a group count, so an exercise added to a workout by hand doesn't take over the group.
+ */
 function pickFromGroup(data: AppData, ids: string[]): string | undefined {
   for (const log of data.history) {
-    const done = log.exercises.find((e) => ids.includes(e.exerciseId));
+    const done = log.exercises.find((e) => e.group && ids.includes(e.exerciseId));
     if (done) return done.exerciseId;
   }
   return ids[0];
