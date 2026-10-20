@@ -1069,6 +1069,11 @@ select.field-input {
   font-variant-numeric: tabular-nums;
 }
 
+.rest-timer.done {
+  background: var(--green);
+  color: #fff;
+}
+
 .hidden {
   display: none;
 }
