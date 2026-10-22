@@ -143,9 +143,15 @@ export class WorkoutScreen implements Screen {
     this.timer.start(store.exercise(logged.exerciseId)?.restSec ?? store.data.settings.defaultRestSec);
   }
 
-  /** Opens, scrolls to and briefly outlines the first unfinished set. */
+  /**
+   * Opens, scrolls to and briefly outlines the next unfinished set.
+   * Untouched exercises before the last started one count as skipped, so the search starts from that one and only falls back to the top.
+   */
   private showNextSet(): void {
-    const next = this.root.querySelector<HTMLElement>(".todo");
+    const lastStarted = [...this.cards.querySelectorAll(".started")].at(-1);
+    const todos = [...this.cards.querySelectorAll<HTMLElement>(".todo")];
+    // A set inside the card counts as following it too.
+    const next = todos.find((todo) => !lastStarted || lastStarted.compareDocumentPosition(todo) & Node.DOCUMENT_POSITION_FOLLOWING) ?? todos[0];
     if (!next) return;
     const card = next.closest("details");
     if (card) card.open = true;
