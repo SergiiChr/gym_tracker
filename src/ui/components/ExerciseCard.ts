@@ -45,7 +45,7 @@ const FLIP_IN = "perspective(400px) translateY(-60%) rotateX(90deg)";
 
 /**
  * One exercise in a running workout. Changes to its sets only touch this workout, not the plan.
- * Unfinished sets carry the `todo` class so the screen can find the next one.
+ * Unfinished sets carry the `todo` class and a card with any done set the `started` class, so the screen can find the next set.
  */
 export class ExerciseCard {
   readonly element: HTMLDetailsElement;
@@ -91,8 +91,7 @@ export class ExerciseCard {
     this.body.replaceWith(body);
     this.body = body;
     this.updateDetail();
-    const complete = isComplete(this.logged);
-    this.element.classList.toggle("complete", complete);
+    const complete = this.paintState();
     // Set changes never start the countdown on their own, but a set added to a complete card cancels it.
     if (!complete) this.stopCountdown();
   }
@@ -115,12 +114,18 @@ export class ExerciseCard {
   private changed(becameDone: boolean): void {
     this.host.save();
     if (becameDone) this.host.onSetDone(this.logged);
-    const complete = isComplete(this.logged);
-    this.element.classList.toggle("complete", complete);
-    if (!complete) return this.stopCountdown();
+    if (!this.paintState()) return this.stopCountdown();
     window.clearTimeout(this.collapseTimer);
     this.element.classList.add("counting");
     this.runner.reset(); // Starts fresh when he isn't running.
+  }
+
+  /** Returns whether every set is done. */
+  private paintState(): boolean {
+    const complete = isComplete(this.logged);
+    this.element.classList.toggle("complete", complete);
+    this.element.classList.toggle("started", this.logged.sets.some((s) => s.done));
+    return complete;
   }
 
   private stopCountdown(): void {

@@ -143,9 +143,12 @@ export class WorkoutScreen implements Screen {
     this.timer.start(store.exercise(logged.exerciseId)?.restSec ?? store.data.settings.defaultRestSec);
   }
 
-  /** Opens, scrolls to and briefly outlines the first unfinished set. */
+  /**
+   * Opens, scrolls to and briefly outlines the next unfinished set.
+   * An exercise already in progress comes first, so one left untouched above it doesn't steal the jump.
+   */
   private showNextSet(): void {
-    const next = this.root.querySelector<HTMLElement>(".todo");
+    const next = this.cards.querySelector<HTMLElement>(".started .todo") ?? this.cards.querySelector<HTMLElement>(".todo");
     if (!next) return;
     const card = next.closest("details");
     if (card) card.open = true;
